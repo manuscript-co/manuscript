@@ -1,3 +1,6 @@
 [submodule "deps/WebKit"]
 	path = deps/WebKit
 	url = git@github.com:manuscript-hq/WebKit.git
+[submodule "deps/cpython"]
+	path = deps/cpython
+	url = git@github.com:manuscript-hq/cpython.git
