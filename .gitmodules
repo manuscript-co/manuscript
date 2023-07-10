@@ -1,4 +1,3 @@
-[submodule "deps/cpython"]
-	path = deps/cpython
-	url = https://github.com/python/cpython.git
-	shallow = true
+[submodule "deps/WebKit"]
+	path = deps/WebKit
+	url = git@github.com:manuscript-hq/WebKit.git

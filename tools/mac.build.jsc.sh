@@ -1,4 +1,4 @@
-
+mkdir build && cd build
 
 
 CXXFLAGS="-pthread -D_USE_PTHREAD_JIT_PERMISSIONS_API=1" cmake -DPORT="JSCOnly" -G "Ninja" \
@@ -6,8 +6,6 @@ CXXFLAGS="-pthread -D_USE_PTHREAD_JIT_PERMISSIONS_API=1" cmake -DPORT="JSCOnly" 
   -DENABLE_STATIC_JSC=ON \
   -DCMAKE_BUILD_TYPE=RelWithDebugInfo \
   -DDEVELOPER_MODE=ON \
-  -DENABLE_B3_JIT=1 \
-  -DWTF_OS_MACOS=1
-  -DENABLE_FTL_JIT=ON ..
+  -DENABLE_FTL_JIT=ON ../deps/Webkit
 
 ninja -j8 jsc
