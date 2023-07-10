@@ -1,0 +1,22 @@
+FROM alpine:3.18
+
+ARG zig_tarball=zig-linux-aarch64-0.11.0-dev.3944+2e424e019.tar.xz
+
+RUN apk add cmake ninja wget perl python3 ruby icu-dev
+WORKDIR /opt
+RUN wget https://ziglang.org/builds/${zig_tarball}
+RUN mkdir zig && tar xf ${zig_tarball} -C zig --strip-components 1
+RUN rm -rf ${zig_tarball}
+RUN export PATH=$PATH:/opt/zig
+RUN FLAGS="" \
+    CC="zig cc $FLAGS" CXX="zig c++ $FLAGS" \
+    LDFLAGS="" \
+    cmake -DPORT="JSCOnly" -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF \
+    -DENABLE_STATIC_JSC=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DENABLE_FTL_JIT=ON ..
+
+RUN FLAGS="-s" \
+    CC="zig cc $FLAGS" CXX="zig c++ $FLAGS" \
+    LDFLAGS="-static-pie -static-libgcc -static-libstdc++ " \
+    ninja -j8 jsc
