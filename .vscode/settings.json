@@ -3,6 +3,12 @@
     "pycore_pylifecycle.h": "c",
     "pycore_abstract.h": "c",
     "python.h": "c",
-    "pyconfig.h": "c"
+    "pyconfig.h": "c",
+    "array": "cpp",
+    "span": "cpp",
+    "string": "cpp",
+    "string_view": "cpp",
+    "vector": "cpp",
+    "patchlevel.h": "c"
   }
 }

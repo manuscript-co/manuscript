@@ -1,7 +1,2 @@
-System dependencies
-
-# Macos
-- homebrew
-- xcode
-
-
+Manuscript
+---
