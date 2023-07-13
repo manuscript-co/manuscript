@@ -7,9 +7,18 @@
 {
   "type": "lldb",
   "request": "launch",
-  "name": "Launch",
+  "name": "msr",
   "program": "${workspaceFolder}/zig-out/bin/msr",
   "args": [],
+  "stopOnEntry": true,
+  "cwd": "${workspaceFolder}"
+},
+{
+  "type": "lldb",
+  "request": "launch",
+  "name": "jsc",
+  "program": "${workspaceFolder}/staging/jsc/bin/jsc",
+  "args": ["${workspaceFolder}/staging/index.js"],
   "stopOnEntry": true,
   "cwd": "${workspaceFolder}"
 }

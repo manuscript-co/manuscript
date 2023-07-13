@@ -3,12 +3,11 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/deps/cpython/Include/**",
-                "${workspaceFolder}/deps/cpython/PC",
-                "${workspaceFolder}/deps/cpython/Modules/**",
-                "${workspaceFolder}/deps/WebKit/Source/JavaScriptCore/**",
-                "${workspaceFolder}/deps/WebKit/Source/WTF",
-                "${workspaceFolder}/deps/WebKit/Source/bmalloc"
+                "${workspaceFolder}/staging/cpython/include/**",
+                "${workspaceFolder}/staging/jsc/JavaScriptCore/Headers/JavaScriptCore",
+                "${workspaceFolder}/staging/jsc/JavaScriptCore/PrivateHeaders/JavaScriptCore",
+                "${workspaceFolder}/staging/jsc/WTF/Headers"
+
             ],
             "defines": [],
             "macFrameworkPath": [
@@ -16,8 +15,8 @@
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "macos-clang-x64"
+            "cppStandard": "c++23",
+            "intelliSenseMode": "${default}"
         }
     ],
     "version": 4
