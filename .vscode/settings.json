@@ -9,6 +9,14 @@
     "string": "cpp",
     "string_view": "cpp",
     "vector": "cpp",
-    "patchlevel.h": "c"
+    "patchlevel.h": "c",
+    "opcode_targets.h": "c",
+    "limits": "cpp",
+    "cstdlib": "cpp",
+    "locale": "cpp",
+    "ostream": "cpp",
+    "new": "cpp",
+    "memory": "cpp",
+    "iosfwd": "cpp"
   }
 }

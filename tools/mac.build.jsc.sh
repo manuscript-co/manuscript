@@ -1,4 +1,3 @@
-# rm -rf staging/jsc
 mkdir -p staging/jsc
 cd staging/jsc
 
