@@ -3,11 +3,12 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/staging/cpython/include/**",
-                "${workspaceFolder}/staging/jsc/JavaScriptCore/Headers/JavaScriptCore",
-                "${workspaceFolder}/staging/jsc/JavaScriptCore/PrivateHeaders/JavaScriptCore",
-                "${workspaceFolder}/staging/jsc/WTF/Headers"
-
+                "${workspaceFolder}/staging/cpython/include/",
+                "${workspaceFolder}/staging/jsc/",
+                "${workspaceFolder}/staging/jsc/JavaScriptCore/Headers",
+                "${workspaceFolder}/staging/jsc/JavaScriptCore/PrivateHeaders",
+                "${workspaceFolder}/staging/jsc/WTF/Headers",
+                "${workspaceFolder}/staging/jsc/bmalloc/Headers",
             ],
             "defines": [],
             "macFrameworkPath": [
@@ -16,7 +17,8 @@
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
             "cppStandard": "c++23",
-            "intelliSenseMode": "${default}"
+            "intelliSenseMode": "${default}",
+            "compileCommands": "${workspaceFolder}/staging/jsc/compile_commands.json",
         }
     ],
     "version": 4

@@ -4,6 +4,5 @@ pub const p = @cImport({
 });
 
 pub const j = @cImport({
-    @cInclude("cmakeconfig.h");
-    @cInclude("JavaScriptCore/JavaScript.h");
+    @cInclude("road-to-jsc.h");
 });

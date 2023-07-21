@@ -7,11 +7,14 @@
 {
   "type": "lldb",
   "request": "launch",
-  "name": "msr",
-  "program": "${workspaceFolder}/zig-out/bin/msr",
-  "args": [],
+  "name": "mrt",
+  "program": "${workspaceFolder}/zig-out/bin/mrt",
+  "args": ["${workspaceFolder}/staging/index.js"],
   "stopOnEntry": true,
-  "cwd": "${workspaceFolder}"
+  "cwd": "${workspaceFolder}",
+  "initCommands": [
+    "command script import deps/WebKit/Tools/lldb/lldb_webkit.py"
+  ]
 },
 {
   "type": "lldb",

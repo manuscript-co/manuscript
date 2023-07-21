@@ -27,7 +27,7 @@ fn runFile(file: [:0]const u8) !void {
 }
 
 fn runCPython(file: [:0]const u8) !void {
-    const fd = p.fopen(file, "r+");
+    const fd = p._Py_fopen_obj(file, "r+");
     defer _ = p.fclose(fd);
     var config: p.PyConfig = undefined;
 
@@ -64,13 +64,8 @@ fn parseArgs() ?[:0]const u8 {
     return file;
 }
 
-fn runJSC(file: [:0]const u8) !void {
-    var buf: [4096]u8 = undefined;
-    const fd = try std.fs.cwd().openFile(file, .{ .mode = .read_only });
-    defer fd.close();
-    _ = try std.fs.File.readAll(fd, &buf);
-    // const contextGroup = j.JSContextGroupCreate();
-    // _ = j.JSGlobalContextCreateInGroup(contextGroup, null);
+fn runJSC(_: [:0]const u8) !void {
+    j.jsc_init();
 }
 
 const mrterror = error{ NonZeroReturnCode, PythonException };
