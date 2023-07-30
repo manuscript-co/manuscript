@@ -10,8 +10,8 @@ pub fn main() !void {
     }
     const stdout = std.io.getStdOut().writer();
     const help =
-        \\manuscript version {s}
-        \\jsc version {s}
+        \\mrt version {s}
+        \\v8 version {s}
         \\cpython version {s}
     ;
     const pv = p.Py_GetVersion();
@@ -69,8 +69,6 @@ fn runJSC(file: [:0]const u8) !void {
     const fd = try std.fs.cwd().openFile(file, .{ .mode = .read_only });
     defer fd.close();
     _ = try std.fs.File.readAll(fd, &buf);
-    // const contextGroup = j.JSContextGroupCreate();
-    // _ = j.JSGlobalContextCreateInGroup(contextGroup, null);
 }
 
 const mrterror = error{ NonZeroReturnCode, PythonException };

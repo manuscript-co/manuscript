@@ -4,23 +4,25 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
-{
-  "type": "lldb",
-  "request": "launch",
-  "name": "msr",
-  "program": "${workspaceFolder}/zig-out/bin/msr",
-  "args": [],
-  "stopOnEntry": true,
-  "cwd": "${workspaceFolder}"
-},
-{
-  "type": "lldb",
-  "request": "launch",
-  "name": "jsc",
-  "program": "${workspaceFolder}/staging/jsc/bin/jsc",
-  "args": ["${workspaceFolder}/staging/index.js"],
-  "stopOnEntry": true,
-  "cwd": "${workspaceFolder}"
-}
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "msr",
+      "program": "${workspaceFolder}/zig-out/bin/msr",
+      "args": [],
+      "stopOnEntry": true,
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "d8",
+      "program": "${workspaceFolder}/staging/v8/d8",
+      "args": [
+        "${workspaceFolder}/staging/index.js"
+      ],
+      "stopOnEntry": true,
+      "cwd": "${workspaceFolder}/staging/v8"
+    }
   ]
 }
