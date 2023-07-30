@@ -1,12 +1,15 @@
-mkdir -p staging/cpython
-cd deps/cpython
 
+PY_SRC=$PWD/deps/cpython
+PY_OUT=$PWD/staging/cpython
+mkdir -p $PY_OUT
+
+cd $PY_SRC
 GDBM_CFLAGS="-I$(brew --prefix gdbm)/include" \
 GDBM_LIBS="-L$(brew --prefix gdbm)/lib -lgdbm" \
 ./configure --with-pydebug \
   --with-openssl="$(brew --prefix openssl@3.0)" \
-  --prefix=$(realpath ../../staging/cpython) \
+  --prefix="$PY_OUT" \
   --disable-test-modules \
-  MODULE_BUILDTYPE=static -q 
+  -q 
 
 make -s -j8 install
