@@ -4,10 +4,8 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/staging/cpython/include/**",
-                "${workspaceFolder}/staging/jsc/JavaScriptCore/Headers/JavaScriptCore",
-                "${workspaceFolder}/staging/jsc/JavaScriptCore/PrivateHeaders/JavaScriptCore",
-                "${workspaceFolder}/staging/jsc/WTF/Headers"
-
+                "${workspaceFolder}/deps/v8/include",
+                "${workspaceFolder}/staging/v8/gen/include"
             ],
             "defines": [],
             "macFrameworkPath": [
