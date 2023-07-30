@@ -1,6 +1,6 @@
 [submodule "deps/cpython"]
 	path = deps/cpython
-	url = git@github.com:manuscript-hq/cpython.git
+	url = git@github.com:manuscript-co/cpython.git
 [submodule "deps/v8"]
 	path = deps/v8
-	url = https://github.com/manuscript-hq/v8.git
+	url = https://github.com/manuscript-co/v8.git
