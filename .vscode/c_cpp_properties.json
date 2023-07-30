@@ -4,7 +4,8 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/staging/cpython/include/**",
-                "${workspaceFolder}/deps/v8/include"
+                "${workspaceFolder}/deps/v8/include",
+                "${workspaceFolder}/staging/v8/gen/include"
             ],
             "defines": [],
             "macFrameworkPath": [

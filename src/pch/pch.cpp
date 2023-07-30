@@ -1,3 +1,4 @@
+#include "v8-gn.h"
 #include "v8.h"
 #include <assert.h>
 #include <libplatform/libplatform.h>
