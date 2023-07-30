@@ -15,7 +15,8 @@ pub fn main() !void {
         \\cpython version {s}
     ;
     const pv = p.Py_GetVersion();
-    try stdout.print(help, .{ VERSION, "2.1", pv });
+    const jv = j.v8_version();
+    try stdout.print(help, .{ VERSION, jv, pv });
 }
 
 fn runFile(file: [:0]const u8) !void {
