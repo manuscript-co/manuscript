@@ -4,10 +4,7 @@ PY_OUT=$PWD/staging/cpython
 mkdir -p $PY_OUT
 
 cd $PY_SRC
-GDBM_CFLAGS="-I$(brew --prefix gdbm)/include" \
-GDBM_LIBS="-L$(brew --prefix gdbm)/lib -lgdbm" \
-./configure --with-pydebug \
-  --with-openssl="$(brew --prefix openssl@3.0)" \
+./configure $DEBUG \
   --prefix="$PY_OUT" \
   --disable-test-modules \
   -q 
