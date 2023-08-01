@@ -73,3 +73,10 @@ fn runJSC(file: [:0]const u8) !void {
 }
 
 const mrterror = error{ NonZeroReturnCode, PythonException };
+
+test "versions" {
+    const pv = p.Py_GetVersion();
+    std.debug.assert(std.mem.startsWith(u8, pv, "3.12"));
+    const jv = j.v8_version();
+    std.debug.assert(std.mem.eql(u8, jv, "11.7.99"));
+}
