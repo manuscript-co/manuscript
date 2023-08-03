@@ -11,7 +11,7 @@ on:
   
 jobs:
   build_macos:
-    name: 'macos build'
+    name: 'macos'
     runs-on: macos-latest
     timeout-minutes: 60
     steps:

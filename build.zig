@@ -53,12 +53,13 @@ fn prepStaging(
 ) !*std.build.Step {
     const stage = b.step("staging-step", "builds all of staging");
     const py = try makePyStage(b, target, optimize);
-    stage.dependOn(py);
 
     const v8 = try makeV8Stage(b, target, optimize);
+    v8.dependOn(py);
     stage.dependOn(v8);
 
     const o1 = try make101Stage(b, target, optimize);
+    o1.dependOn(v8);
     stage.dependOn(o1);
 
     return stage;
@@ -227,7 +228,8 @@ fn make101Stage(
     const o1 = b.step("101", "builds 101");
     const o1out = try rp(b, &.{stagingDir, "101"});
     const root = std.Build.FileSource.relative(".").getPath(b);
-    std.fs.cwd().access(o1out, .{ .mode = .read_only }) catch try std.fs.makeDirAbsolute(o1out);
+    const cwd = std.fs.cwd();
+    cwd.access(o1out, .{ .mode = .read_only }) catch try cwd.makePath(o1out);
     
     // TODO support windows
     const cmake = b.addSystemCommand(&.{
