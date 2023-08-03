@@ -154,6 +154,8 @@ fn makeV8Stage(
         .linux => {
             const linux = 
             \\v8_enable_private_mapping_fork_optimization=true
+            \\clang_base_path="/usr"
+            \\is_clang=false
             \\target_os="linux"
             \\host_os="linux"
             ;
