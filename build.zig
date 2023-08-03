@@ -75,7 +75,7 @@ fn prepRelease(b: *Builder) !*std.build.Step {
 fn rp(b: *Builder, parts: []const []const u8) ![]const u8 {
     const joined = try join(b.allocator, parts);
     if (std.fs.path.isAbsolute(joined)) return joined;
-    return std.build.FileSource.relative(joined).path;
+    return std.build.FileSource.relative(joined).getPath(b.getInstallStep().owner);
 }
 
 fn collapse(b: *Builder, s: []const u8) ![]const u8 {
