@@ -19,7 +19,7 @@ jobs:
     - name: install system dependencies
       run: bash tools/mac.install.brew.deps.sh
     - name: fetch v8 dependencies
-      run: cd deps/v8 && bash ../tools/fetch.v8.deps.sh
+      run: cd deps && bash ../tools/fetch.v8.deps.sh
     - name: build release
       run: zig build -Doptimize=ReleaseFast -Dprep-staging=true -Drelease-tarball=true
     
