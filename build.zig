@@ -133,10 +133,17 @@ fn makeV8Stage(
     \\v8_enable_31bit_smis_on_64bit_arch=true
 
     \\use_goma=false
-    \\v8_enable_fast_mksnapshot=true
+    \\v8_enable_fast_mksnapshot=false
     \\v8_enable_snapshot_compression=true
     \\v8_enable_webassembly=false
     \\v8_enable_i18n_support=false
+    
+    \\cppgc_enable_young_generation=false
+    \\cppgc_enable_caged_heap=false
+    \\v8_enable_shared_ro_heap=false
+    \\v8_enable_pointer_compression=false
+    \\v8_enable_verify_heap=false
+    \\v8_enable_sandbox=false
 
     \\use_custom_libcxx=false
     \\clang_use_chrome_plugins=false
@@ -147,6 +154,8 @@ fn makeV8Stage(
         .linux => {
             const linux = 
             \\v8_enable_private_mapping_fork_optimization=true
+            \\target_os="linux"
+            \\host_os="linux"
             ;
             try gnargs.append(linux);
         },
@@ -158,6 +167,7 @@ fn makeV8Stage(
             \\use_gold=false
             \\target_os="mac"
             \\host_os="mac"
+            \\cc_wrapper="ccache"
             ;
             try gnargs.append(mac);
         },
@@ -198,7 +208,7 @@ fn makeV8Stage(
     gngen.cwd = v8src;
 
     const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "v8_monolith"
+        "ninja", "-j8", "v8_monolith"
     });
     ninja.cwd = v8out; 
     ninja.step.dependOn(&gngen.step);
@@ -209,7 +219,7 @@ fn makeV8Stage(
 fn make101Stage(
     b: *Builder, 
     _: std.zig.CrossTarget, 
-    _: std.builtin.Mode
+    optimize: std.builtin.Mode
 ) !*std.build.Step {
     const stagingDir = b.getInstallPath(.prefix, "staging");
     const o1 = b.step("101", "builds 101");
@@ -225,9 +235,15 @@ fn make101Stage(
                 b.fmt("-I{s}", .{try rp(b, &.{stagingDir, "v8", "gen", "include"})}),
                 try rp(b, &.{stagingDir, "v8", "obj", "libv8_monolith.a"})
             })
-        })
+        }),
+        if (optimize == .Debug) "-DCMAKE_BUILD_TYPE=Debug" else "-DCMAKE_BUILD_TYPE=Release"
     });
+    const ninja = b.addSystemCommand(&.{
+        "ninja", "-j4"
+    });
+    ninja.cwd = o1out;
     cmake.cwd = o1out;
-    o1.dependOn(&cmake.step);
+    ninja.step.dependOn(&cmake.step);
+    o1.dependOn(&ninja.step);
     return o1;
 }

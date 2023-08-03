@@ -1,0 +1,37 @@
+name: build package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - 'main'
+  pull_request:
+    branches:
+    - 'main'
+  
+jobs:
+  build_macos:
+    name: 'macos'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v3
+    - name: install system dependencies
+      run: brew install pkg-config openssl@3.0 xz gdbm tcl-tk
+    - name: fetch v8 dependencies
+      run: cd deps/v8 && bash ../tools/fetch.v8.deps.sh
+    - name: build staging
+      run: zig build -Dprep-staging=true
+    - name: build release
+      run: zig build -Doptimize=ReleaseFast -Dprep-staging=true -Drelease-tarball=true
+    
+  build_linux:
+    name: 'linux'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+    - uses: actions/checkout@v3
+    - name: build staging
+      run: zig build -Dprep-staging=true
+    - name: build release
+      run: zig build -Drelease-tarball=true
