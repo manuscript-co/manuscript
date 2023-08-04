@@ -12,7 +12,7 @@ on:
 jobs:
   build_macos:
     name: 'macos'
-    runs-on: macos-latest
+    runs-on: macos-13
     timeout-minutes: 60
     steps:
     - uses: actions/checkout@v3
