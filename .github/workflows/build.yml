@@ -21,6 +21,10 @@ jobs:
     - uses: goto-bus-stop/setup-zig@v2
       with:
         version: 0.11.0-dev.4191+1bf16b172
+    - uses: hendrikmuhs/ccache-action@v1.2
+    - name: build
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
     - name: install system dependencies
       run: |
         bash tools/mac.install.brew.deps.sh
@@ -36,7 +40,14 @@ jobs:
         /usr/bin/clang -v
         brew --prefix llvm@15
     - name: build release
-      run: zig build -Doptimize=ReleaseFast -Dprep-staging=true -Drelease-tarball=true
+      run: |
+        zig build \
+          -Doptimize=ReleaseFast \
+          -Dprep-staging=true \
+          -Drelease-tarball=true \
+          -Dv8-toolchain=$(brew --prefix llvm@15)
+          -DCC=$(brew --prefix llvm@15)/clang
+          -DCXX=$(brew --prefix llvm@15)/clang++
     
   # build_linux:
   #   name: 'linux'

@@ -24,9 +24,20 @@ pub fn build(b: *Builder) !void {
     mrt.addAssemblyFile(try rp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
     mrt.linkLibCpp();
 
+    const toolchain = b.option([]const u8, "v8-toolchain", "toolchain to build v8");
+    const CC = b.option([]const u8, "CC", "cc for staging");
+    const CXX = b.option([]const u8, "CXX", "cxx for staging");
+
     const prep = b.option(bool, "prep-staging", "builds v8, cpython, 101");
     if (safeUnwrap(prep)) {
-        const stage = try prepStaging(b, target, optimize);
+        const stage = try prepStaging(
+            b, .{ 
+                .target = target, 
+                .optimize = optimize, 
+                .toolchain = toolchain, 
+                .CC = CC, .CXX = CXX 
+            }
+        );
         mrt.step.dependOn(stage);
     }
 
@@ -46,18 +57,25 @@ inline fn safeUnwrap(v: ?bool) bool {
     return false;
 }
 
+const StagePrepOptions = struct {
+    target: std.zig.CrossTarget,
+    optimize: std.builtin.Mode,
+    toolchain: ?[]const u8,
+    CC: ?[]const u8,
+    CXX: ?[]const u8,
+};
+
 fn prepStaging(
     b: *Builder, 
-    target: std.zig.CrossTarget, 
-    optimize: std.builtin.Mode
+    options: StagePrepOptions
 ) !*std.build.Step {
     const stage = b.step("staging-step", "builds all of staging");
-    // const py = try makePyStage(b, target, optimize);
-    // stage.dependOn(py);
+    const py = try makePyStage(b, options);
+    stage.dependOn(py);
 
-    const v8 = try makeV8Stage(b, target, optimize);
+    const v8 = try makeV8Stage(b, options);
 
-    const o1 = try make101Stage(b, target, optimize);
+    const o1 = try make101Stage(b, options);
     o1.dependOn(v8);
 
     stage.dependOn(o1);
@@ -92,8 +110,7 @@ fn escapeDouble(b: *Builder, s: []const u8) ![]const u8 {
 
 fn makePyStage(
     b: *Builder, 
-    _: std.zig.CrossTarget, 
-    optimize: std.builtin.Mode
+    options: StagePrepOptions
 ) !*std.build.Step {
     const stagingDir = b.getInstallPath(.prefix, "staging");
     const py = b.step("python", "build-py");
@@ -101,7 +118,7 @@ fn makePyStage(
     const pysrc = try rp(b, &.{ "deps", "cpython" });
     const cf = b.addSystemCommand(&.{ 
         "./configure", 
-        if(optimize == .Debug) "--with-pydebug" else "", 
+        if(options.optimize == .Debug) "--with-pydebug" else "", 
         "--disable-test-modules", 
         b.fmt("--prefix={s}", .{pyout}), 
         "-q" 
@@ -116,8 +133,7 @@ fn makePyStage(
 
 fn makeV8Stage(
     b: *Builder, 
-    target: std.zig.CrossTarget, 
-    optimize: std.builtin.Mode
+    options: StagePrepOptions
 ) !*std.build.Step {
     const stagingDir = b.getInstallPath(.prefix, "staging");
     const v8 = b.step("v8", "build-v8");
@@ -125,6 +141,8 @@ fn makeV8Stage(
     const v8out = try rp(b, &.{stagingDir, "v8"});
     var gnargs = std.ArrayList([]const u8).init(b.allocator);
     defer gnargs.deinit();
+
+
     const basegn = 
     \\is_component_build=false
     \\v8_monolithic=true
@@ -150,7 +168,7 @@ fn makeV8Stage(
     ;
     try gnargs.append(basegn);
 
-    switch (target.getOsTag()) {
+    switch (options.target.getOsTag()) {
         .linux => {
             const linux = 
             \\v8_enable_private_mapping_fork_optimization=true
@@ -163,7 +181,6 @@ fn makeV8Stage(
         },
         .macos => {
             const mac = 
-            \\clang_base_path="/usr/local/opt/llvm@15"
             \\treat_warnings_as_errors=false
             \\use_lld=false
             \\use_gold=false
@@ -171,12 +188,17 @@ fn makeV8Stage(
             \\host_os="mac"
             \\cc_wrapper="ccache"
             ;
+            if (options.toolchain) |chain| {
+                try gnargs.append(b.fmt("clang_base_path=\"{s}\"", .{chain}));
+            } else {
+                try gnargs.append(b.fmt("clang_base_path=\"/usr\"", .{}));
+            }
             try gnargs.append(mac);
         },
         else => unreachable
     }
 
-    switch (target.getCpuArch()) {
+    switch (options.target.getCpuArch()) {
         .arm, .aarch64 => {
             const arch = try collapse(b, 
             \\target_cpu="arm64"
@@ -192,7 +214,7 @@ fn makeV8Stage(
         else => unreachable
     }
 
-    if (optimize == .Debug) {
+    if (options.optimize == .Debug) {
         const debug = 
         \\is_debug=true
         \\symbol_level=1
@@ -221,8 +243,7 @@ fn makeV8Stage(
 
 fn make101Stage(
     b: *Builder, 
-    _: std.zig.CrossTarget, 
-    optimize: std.builtin.Mode
+    options: StagePrepOptions
 ) !*std.build.Step {
     const stagingDir = b.getInstallPath(.prefix, "staging");
     const o1 = b.step("101", "builds 101");
@@ -240,7 +261,9 @@ fn make101Stage(
                 try rp(b, &.{stagingDir, "v8", "obj", "libv8_monolith.a"})
             })
         }),
-        if (optimize == .Debug) "-DCMAKE_BUILD_TYPE=Debug" else "-DCMAKE_BUILD_TYPE=Release"
+        if (options.optimize == .Debug) "-DCMAKE_BUILD_TYPE=Debug" else "-DCMAKE_BUILD_TYPE=Release",
+        if (options.CC) |CC| b.fmt("-DCMAKE_C_COMPILER={s}", .{CC}) else "",
+        if (options.CXX) |CXX| b.fmt("-DCMAKE_CXX_COMPILER={s}", .{CXX}) else "",
     });
     const ninja = b.addSystemCommand(&.{
         "ninja", "-j4"
