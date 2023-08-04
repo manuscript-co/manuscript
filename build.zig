@@ -202,8 +202,9 @@ fn makeV8Stage(
         try gnargs.append(debug);
     }
 
+    const gnbin = try rp(b, &.{"tools", "gn"});
     const gngen = b.addSystemCommand(&.{
-        "gn", "gen", 
+        gnbin, "gen", 
         v8out,
         b.fmt("--args={s}", .{ try collapse(b, 
             try std.mem.join(b.allocator, " ", gnargs.items))}),

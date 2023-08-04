@@ -21,6 +21,10 @@ jobs:
         version: 0.11.0-dev.4191+1bf16b172
     - name: install system dependencies
       run: bash tools/mac.install.brew.deps.sh
+    - name: install gn
+      run: |
+        tar xf deps/gn/gn-mac-amd64.zip -C tools/
+        export PATH=$PATH:$PWD/tools
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
     - name: build release
