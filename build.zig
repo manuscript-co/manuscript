@@ -52,10 +52,10 @@ fn prepStaging(
     optimize: std.builtin.Mode
 ) !*std.build.Step {
     const stage = b.step("staging-step", "builds all of staging");
-    const py = try makePyStage(b, target, optimize);
+    // const py = try makePyStage(b, target, optimize);
+    // stage.dependOn(py);
 
     const v8 = try makeV8Stage(b, target, optimize);
-    v8.dependOn(py);
     stage.dependOn(v8);
 
     const o1 = try make101Stage(b, target, optimize);
