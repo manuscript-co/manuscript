@@ -163,12 +163,13 @@ fn makeV8Stage(
         },
         .macos => {
             const mac = 
-            \\clang_base_path="/usr"
+            \\clang_base_path="/usr/local/opt/llvm@15"
             \\treat_warnings_as_errors=false
             \\use_lld=false
             \\use_gold=false
             \\target_os="mac"
             \\host_os="mac"
+            \\cc_wrapper="ccache"
             ;
             try gnargs.append(mac);
         },
