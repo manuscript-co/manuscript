@@ -56,12 +56,11 @@ fn prepStaging(
     // stage.dependOn(py);
 
     const v8 = try makeV8Stage(b, target, optimize);
-    stage.dependOn(v8);
 
     const o1 = try make101Stage(b, target, optimize);
     o1.dependOn(v8);
-    stage.dependOn(o1);
 
+    stage.dependOn(o1);
     return stage;
 }
 
