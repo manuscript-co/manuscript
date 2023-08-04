@@ -45,17 +45,6 @@ jobs:
           -Doptimize=ReleaseFast \
           -Dprep-staging=true \
           -Drelease-tarball=true \
-          -Dv8-toolchain=$(brew --prefix llvm@15)
-          -DCC=$(brew --prefix llvm@15)/clang
+          -Dv8-toolchain=$(brew --prefix llvm@15) \
+          -DCC=$(brew --prefix llvm@15)/clang \ 
           -DCXX=$(brew --prefix llvm@15)/clang++
-    
-  # build_linux:
-  #   name: 'linux'
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 60
-  #   steps:
-  #   - uses: actions/checkout@v3
-  #   - name: build staging
-  #     run: zig build -Dprep-staging=true
-  #   - name: build release
-  #     run: zig build -Drelease-tarball=true

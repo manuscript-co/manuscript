@@ -73,12 +73,13 @@ fn prepStaging(
     const py = try makePyStage(b, options);
     stage.dependOn(py);
 
+    const j = b.step("js", "builds v8 and 101");
     const v8 = try makeV8Stage(b, options);
-
     const o1 = try make101Stage(b, options);
     o1.dependOn(v8);
+    j.dependOn(o1);
 
-    stage.dependOn(o1);
+    stage.dependOn(j);
     return stage;
 }
 
@@ -262,15 +263,17 @@ fn make101Stage(
             })
         }),
         if (options.optimize == .Debug) "-DCMAKE_BUILD_TYPE=Debug" else "-DCMAKE_BUILD_TYPE=Release",
-        if (options.CC) |CC| b.fmt("-DCMAKE_C_COMPILER={s}", .{CC}) else "",
-        if (options.CXX) |CXX| b.fmt("-DCMAKE_CXX_COMPILER={s}", .{CXX}) else "",
     });
+
+    if (options.CC) |CC| cmake.setEnvironmentVariable("CC", CC);
+    if (options.CXX) |CXX| cmake.setEnvironmentVariable("CXX", CXX);
+
     const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4"
+        "ninja", "-j4", "--quiet"
     });
     ninja.cwd = o1out;
     cmake.cwd = o1out;
     ninja.step.dependOn(&cmake.step);
     o1.dependOn(&ninja.step);
-    return o1;
+    return &cmake.step;
 }
