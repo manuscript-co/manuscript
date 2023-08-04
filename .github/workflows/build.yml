@@ -24,6 +24,7 @@ jobs:
     - name: install system dependencies
       run: |
         bash tools/mac.install.brew.deps.sh
+        pip install Jinja2
     - name: install gn
       run: |
         tar xf deps/gn/gn-mac-amd64.zip -C tools/
