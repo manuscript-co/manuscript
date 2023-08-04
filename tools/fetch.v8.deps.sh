@@ -1,9 +1,3 @@
-# cd staging
-# git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-# cd depot_tools
-# ./gclient sync
-
-cd deps
 mkdir -p v8/third_party/googletest/src
 
 # src url revision
@@ -29,3 +23,5 @@ fetch_specific v8/third_party/googletest/src https://chromium.googlesource.com/e
 fetch_specific v8/third_party/zlib https://chromium.googlesource.com/chromium/src/third_party/zlib.git 526382e41c9c5275dc329db4328b54e4f344a204
 
 touch v8/build/config/gclient_args.gni
+
+ls v8
