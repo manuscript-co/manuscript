@@ -169,7 +169,6 @@ fn makeV8Stage(
             \\use_gold=false
             \\target_os="mac"
             \\host_os="mac"
-            \\cc_wrapper="ccache"
             ;
             try gnargs.append(mac);
         },
