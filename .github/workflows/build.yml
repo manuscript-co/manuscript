@@ -29,6 +29,8 @@ jobs:
         export PATH=$PATH:$PWD/tools
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
+    - name: check
+      run: /usr/bin/clang -v
     - name: build release
       run: zig build -Doptimize=ReleaseFast -Dprep-staging=true -Drelease-tarball=true
     
