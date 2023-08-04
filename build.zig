@@ -233,7 +233,7 @@ fn makeV8Stage(
     gngen.cwd = v8src;
 
     const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "v8_monolith"
+        "ninja", "-j4", "v8_monolith", "--quiet"
     });
     ninja.cwd = v8out; 
     ninja.step.dependOn(&gngen.step);
