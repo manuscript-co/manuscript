@@ -136,6 +136,7 @@ fn makeV8Stage(
     b: *Builder, 
     options: StagePrepOptions
 ) !*std.build.Step {
+    std.debug.print("building v8", .{});
     const stagingDir = b.getInstallPath(.prefix, "staging");
     const v8 = b.step("v8", "build-v8");
     const v8src = try rp(b, &.{"deps", "v8"});
@@ -234,7 +235,7 @@ fn makeV8Stage(
     gngen.cwd = v8src;
 
     const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "v8_monolith", "--quiet"
+        "ninja", "-j4", "v8_monolith", ""
     });
     ninja.cwd = v8out; 
     ninja.step.dependOn(&gngen.step);
