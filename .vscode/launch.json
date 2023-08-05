@@ -7,8 +7,8 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "msr",
-      "program": "${workspaceFolder}/zig-out/bin/msr",
+      "name": "mrt",
+      "program": "${workspaceFolder}/zig-out/bin/mrt",
       "args": [],
       "stopOnEntry": true,
       "cwd": "${workspaceFolder}"

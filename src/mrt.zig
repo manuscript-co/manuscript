@@ -23,7 +23,7 @@ fn runFile(file: [:0]const u8) !void {
     if (std.mem.endsWith(u8, file, "py")) {
         try runCPython(file);
     } else if (std.mem.endsWith(u8, file, "js")) {
-        try runJSC(file);
+        try runV8on101(file);
     }
 }
 
@@ -65,7 +65,7 @@ fn parseArgs() ?[:0]const u8 {
     return file;
 }
 
-fn runJSC(file: [:0]const u8) !void {
+fn runV8on101(file: [:0]const u8) !void {
     var buf: [4096]u8 = undefined;
     const fd = try std.fs.cwd().openFile(file, .{ .mode = .read_only });
     defer fd.close();
