@@ -7,6 +7,7 @@ extern "C" {
 
 int shell(int argc, char* argv[]);
 const char* v8_version();
+void exec_file(char* name);
 
 #ifdef __cplusplus
 }
