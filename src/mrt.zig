@@ -66,10 +66,13 @@ fn parseArgs() ?[:0]const u8 {
 }
 
 fn runV8on101(file: [:0]const u8) !void {
-    var buf: [4096]u8 = undefined;
     const fd = try std.fs.cwd().openFile(file, .{ .mode = .read_only });
     defer fd.close();
-    _ = try std.fs.File.readAll(fd, &buf);
+    const stats = try std.fs.File.stat(fd);
+    const buf = try std.heap.c_allocator.alloc(u8, stats.size);
+    defer std.heap.c_allocator.free(buf);
+    _ = try std.fs.File.readAll(fd, buf);
+    j.exec_file(buf.ptr);
 }
 
 const mrterror = error{ NonZeroReturnCode, PythonException };

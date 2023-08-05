@@ -1,4 +1,4 @@
-kdir -p v8/third_party/googletest/src
+mkdir -p v8/third_party/googletest/src
 
 # src url revision
 fetch_specific() {
@@ -23,5 +23,3 @@ fetch_specific v8/third_party/googletest/src https://chromium.googlesource.com/e
 fetch_specific v8/third_party/zlib https://chromium.googlesource.com/chromium/src/third_party/zlib.git 14dd4c4455602c9b71a1a89b5cafd1f4030d2e3f
 
 touch v8/build/config/gclient_args.gni
-
-ls v8

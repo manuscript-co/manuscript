@@ -3,9 +3,9 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/staging/cpython/include/**",
+                "${workspaceFolder}/zig-out/staging/cpython/include/**",
                 "${workspaceFolder}/deps/v8/include",
-                "${workspaceFolder}/staging/v8/gen/include"
+                "${workspaceFolder}/zig-out/staging/v8/gen/include"
             ],
             "defines": [],
             "macFrameworkPath": [

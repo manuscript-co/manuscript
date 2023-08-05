@@ -47,6 +47,17 @@ pub fn build(b: *Builder) !void {
         b.getInstallStep().dependOn(release);
     }
 
+    const oo1 = b.option(bool, "oo1", "build only 101");
+    if (safeUnwrap(oo1)) {
+        const s = try make101Stage(b, .{ 
+            .target = target, 
+            .optimize = optimize, 
+            .toolchain = toolchain, 
+            .CC = CC, .CXX = CXX 
+        });
+        mrt.step.dependOn(s);
+    } 
+
     b.installArtifact(mrt);
 }
 
@@ -276,5 +287,5 @@ fn make101Stage(
     cmake.cwd = o1out;
     ninja.step.dependOn(&cmake.step);
     o1.dependOn(&ninja.step);
-    return &cmake.step;
+    return o1;
 }
