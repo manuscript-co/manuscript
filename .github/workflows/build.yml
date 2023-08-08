@@ -20,7 +20,7 @@ jobs:
         submodules: true
     - uses: goto-bus-stop/setup-zig@v2
       with:
-        version: 0.11.0-dev.4191+1bf16b172
+        version: 0.11.0
     - uses: hendrikmuhs/ccache-action@v1.2
     - name: build
       run: |
@@ -33,6 +33,9 @@ jobs:
       run: |
         tar xf deps/gn/gn-mac-amd64.zip -C tools/
         export PATH=$PATH:$PWD/tools
+    - name: setup modules
+      run: |
+        cp tools/Setup.local deps/cpython/Modules
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
     - name: check
