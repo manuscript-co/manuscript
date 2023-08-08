@@ -6,7 +6,7 @@ pub fn build(b: *Builder) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const staging = b.getInstallPath(.prefix, "staging");
+    const staging = try join(b.allocator, &.{"zig-out", "staging"}); // b.getInstallPath(.prefix, "staging");
     const mrt = b.addExecutable(.{ 
         .name = "mrt", 
         .root_source_file = std.build.FileSource.relative("src/mrt.zig"), 
@@ -14,14 +14,27 @@ pub fn build(b: *Builder) !void {
         .optimize = optimize 
     });
 
-    mrt.addIncludePath(try rp(b, &.{staging, "cpython", "include", "python3.12d" }));
-    mrt.addIncludePath(try rp(b, &.{ "src", "101" }));
+    mrt.addIncludePath(try lp(b, &.{
+        staging, "cpython", "include", 
+        if (optimize == .Debug) "python3.12d" else "python3.12"
+    }));
+    mrt.addIncludePath(try lp(b, &.{ "src", "101" }));
 
     // python
-    mrt.addAssemblyFile(try rp(b, &.{ staging, "cpython", "lib", "libpython3.12d.a" }));
+    mrt.addAssemblyFile(try lp(b, &.{ 
+        staging, "cpython", "lib",
+        if (optimize == .Debug) "libpython3.12d.a" else "libpython3.12.a"
+    }));
+
+    mrt.addAssemblyFile(try lp(b, &.{
+        "deps", "cpython", "Modules", "_decimal", "libmpdec", "libmpdec.a"
+    }));
+    mrt.addAssemblyFile(try lp(b, &.{
+        "deps", "cpython", "Modules", "_hacl", "libHacl_Hash_SHA2.a"
+    }));
     // javascript
-    mrt.addAssemblyFile(try rp(b, &.{ staging, "101", "lib101.a" }));
-    mrt.addAssemblyFile(try rp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
+    mrt.addAssemblyFile(try lp(b, &.{ staging, "101", "lib101.a" }));
+    mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
     mrt.linkLibCpp();
 
     const toolchain = b.option([]const u8, "v8-toolchain", "toolchain to build v8");
@@ -29,19 +42,19 @@ pub fn build(b: *Builder) !void {
     const CXX = b.option([]const u8, "CXX", "cxx for staging");
 
     const prep = b.option(bool, "prep-staging", "builds v8, cpython, 101");
+    const options: StagePrepOptions = .{ 
+        .target = target, 
+        .optimize = optimize, 
+        .toolchain = toolchain, 
+        .CC = CC, .CXX = CXX 
+    };
+
     if (safeUnwrap(prep)) {
-        const stage = try prepStaging(
-            b, .{ 
-                .target = target, 
-                .optimize = optimize, 
-                .toolchain = toolchain, 
-                .CC = CC, .CXX = CXX 
-            }
-        );
+        const stage = try prepStaging(b, options);
         mrt.step.dependOn(stage);
     }
 
-    const relTgz = b.option(bool, "release-tarball", "builds release tarball");
+    const relTgz = b.option(bool, "release-tgz", "builds release tarball");
     if (safeUnwrap(relTgz)) {
         const release = try prepRelease(b);
         b.getInstallStep().dependOn(release);
@@ -49,14 +62,15 @@ pub fn build(b: *Builder) !void {
 
     const oo1 = b.option(bool, "oo1", "build only 101");
     if (safeUnwrap(oo1)) {
-        const s = try make101Stage(b, .{ 
-            .target = target, 
-            .optimize = optimize, 
-            .toolchain = toolchain, 
-            .CC = CC, .CXX = CXX 
-        });
+        const s = try make101Stage(b, options);
         mrt.step.dependOn(s);
     } 
+
+    const opy = b.option(bool, "opy", "build only python");
+    if (safeUnwrap(opy)) {
+        const py = try makePyStage(b, options);
+        mrt.step.dependOn(py);
+    }
 
     b.installArtifact(mrt);
 }
@@ -108,6 +122,11 @@ fn rp(b: *Builder, parts: []const []const u8) ![]const u8 {
     return std.build.FileSource.relative(joined).getPath(b.getInstallStep().owner);
 }
 
+fn lp(b: *Builder, parts: []const []const u8) !std.Build.LazyPath {
+    const joined = try join(b.allocator, parts);
+    return std.build.FileSource.relative(joined);
+}
+
 fn collapse(b: *Builder, s: []const u8) ![]const u8 {
     const out = try b.allocator.alloc(u8, s.len);
     _ = std.mem.replace(u8, s, "\n", " ", out);
@@ -132,11 +151,17 @@ fn makePyStage(
         "./configure", 
         if(options.optimize == .Debug) "--with-pydebug" else "", 
         "--disable-test-modules", 
+        "--disable-shared",
+        "--with-static-libpython",
         b.fmt("--prefix={s}", .{pyout}), 
         "-q" 
     });
+    if (options.CC) |CC| cf.setEnvironmentVariable("CC", CC);
+    if (options.CXX) |CXX| cf.setEnvironmentVariable("CXX", CXX);
     cf.cwd = pysrc;
-    const mk = b.addSystemCommand(&.{ "make", "-s", "-j4", "install" });
+    const mk = b.addSystemCommand(&.{ "make", "-s", "-j4", "altinstall" });
+    mk.setEnvironmentVariable("MODULE_XXLIMITED_STATE", "no");
+    mk.setEnvironmentVariable("MODULE_XXLIMITED_35_STATE", "no");
     mk.cwd = pysrc;
     mk.step.dependOn(&cf.step);
     py.dependOn(&mk.step);
@@ -189,6 +214,7 @@ fn makeV8Stage(
             \\is_clang=false
             \\target_os="linux"
             \\host_os="linux"
+            \\cc_wrapper="ccache"
             ;
             try gnargs.append(linux);
         },
@@ -246,7 +272,7 @@ fn makeV8Stage(
     gngen.cwd = v8src;
 
     const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "v8_monolith", ""
+        "ninja", "-j4", "v8_monolith"
     });
     ninja.cwd = v8out; 
     ninja.step.dependOn(&gngen.step);
