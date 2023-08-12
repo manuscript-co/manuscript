@@ -27,12 +27,19 @@ pub fn build(b: *Builder) !void {
         if (optimize == .Debug) "libpython3.12d.a" else "libpython3.12.a"
     }));
 
+    if (target.getOsTag() == .macos) {
+        mrt.linkSystemLibrary("z");
+        mrt.linkFramework("Foundation");
+        mrt.linkFramework("SystemConfiguration");
+    }
+
     mrt.addAssemblyFile(try lp(b, &.{
         "deps", "cpython", "Modules", "_decimal", "libmpdec", "libmpdec.a"
     }));
     mrt.addAssemblyFile(try lp(b, &.{
         "deps", "cpython", "Modules", "_hacl", "libHacl_Hash_SHA2.a"
     }));
+
     // javascript
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
@@ -112,19 +119,19 @@ fn makePyStage(
     const pysrc = try rp(b, &.{ "deps", "cpython" });
     const cf = b.addSystemCommand(&.{ 
         "./configure", 
-        if(options.optimize == .Debug) "--with-pydebug" else "", 
         "--disable-test-modules", 
         "--disable-shared",
         "--with-static-libpython",
         b.fmt("--prefix={s}", .{pyout}), 
         "-q" 
     });
+
+    if (options.optimize == .Debug) cf.addArg("--with-pydebug"); 
     if (options.CC) |CC| cf.setEnvironmentVariable("CC", CC);
     if (options.CXX) |CXX| cf.setEnvironmentVariable("CXX", CXX);
     cf.cwd = pysrc;
+
     const mk = b.addSystemCommand(&.{ "make", "-s", "-j4", "altinstall" });
-    mk.setEnvironmentVariable("MODULE_XXLIMITED_STATE", "no");
-    mk.setEnvironmentVariable("MODULE_XXLIMITED_35_STATE", "no");
     mk.cwd = pysrc;
     mk.step.dependOn(&cf.step);
     return &mk.step;
