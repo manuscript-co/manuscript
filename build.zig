@@ -19,7 +19,7 @@ pub fn build(b: *Builder) !void {
         staging, "cpython", "include", 
         if (optimize == .Debug) "python3.12d" else "python3.12"
     }));
-    mrt.addIncludePath(try lp(b, &.{ "src", "101" }));
+    mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
 
     // python
     mrt.addAssemblyFile(try lp(b, &.{ 
@@ -34,7 +34,7 @@ pub fn build(b: *Builder) !void {
         "deps", "cpython", "Modules", "_hacl", "libHacl_Hash_SHA2.a"
     }));
     // javascript
-    mrt.addAssemblyFile(try lp(b, &.{ staging, "101", "lib101.a" }));
+    mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
     mrt.linkLibCpp();
 
@@ -52,9 +52,7 @@ pub fn build(b: *Builder) !void {
     const js = b.option(bool, "build-js", "build only v8");
     if (safeUnwrap(js)) {
         const v8 = try makeV8Stage(b, options);
-        const o1 = try make101Stage(b, options);
-        o1.dependOn(v8);
-        mrt.step.dependOn(o1);
+        mrt.step.dependOn(v8);
     }
 
     const bpy = b.option(bool, "build-py", "build only python");
@@ -72,6 +70,7 @@ inline fn safeUnwrap(v: ?bool) bool {
     }
     return false;
 }
+
 
 const StagePrepOptions = struct {
     target: std.zig.CrossTarget,
@@ -138,6 +137,24 @@ fn makeV8Stage(
     const stagingDir = b.getInstallPath(.prefix, "staging");
     const v8src = try rp(b, &.{"deps", "v8"});
     const v8out = try rp(b, &.{stagingDir, "v8"});
+
+    const gnbin = try rp(b, &.{"tools", "gn"});
+    const gngen = b.addSystemCommand(&.{
+        gnbin, "gen",
+        v8out,
+        b.fmt("--args={s}", .{ try getGnArgs(b, options) }),
+    });
+    gngen.cwd = v8src;
+
+    const ninja = b.addSystemCommand(&.{
+        "ninja", "-j4", "v8_monolith", "101",  "--quiet"
+    });
+    ninja.cwd = v8out;
+    ninja.step.dependOn(&gngen.step);
+    return &ninja.step;
+}
+
+fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
     var gnargs = std.ArrayList([]const u8).init(b.allocator);
     defer gnargs.deinit();
 
@@ -221,54 +238,6 @@ fn makeV8Stage(
         ;
         try gnargs.append(debug);
     }
-
-    const gnbin = try rp(b, &.{"tools", "gn"});
-    const gngen = b.addSystemCommand(&.{
-        gnbin, "gen",
-        v8out,
-        b.fmt("--args={s}", .{ try collapse(b, 
-            try std.mem.join(b.allocator, " ", gnargs.items))}),
-    });
-    gngen.cwd = v8src;
-
-    const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "v8_monolith", "--quiet"
-    });
-    ninja.cwd = v8out;
-    ninja.step.dependOn(&gngen.step);
-    return &ninja.step;
-}
-
-fn make101Stage(
-    b: *Builder, 
-    options: StagePrepOptions
-) !*std.build.Step {
-    const stagingDir = b.getInstallPath(.prefix, "staging");
-    const o1out = try rp(b, &.{stagingDir, "101"});
-    const root = std.Build.FileSource.relative(".").getPath(b);
-    const cwd = std.fs.cwd();
-    cwd.access(o1out, .{ .mode = .read_only }) catch try cwd.makePath(o1out);
-
-    // TODO support windows
-    const cmake = b.addSystemCommand(&.{
-        "cmake", root, "-G", "Ninja",
-        b.fmt("-DCMAKE_CXX_FLAGS={s}", .{
-            try std.mem.join(b.allocator, " ", &.{
-                b.fmt("-I{s}", .{try rp(b, &.{stagingDir, "v8", "gen", "include"})}),
-                try rp(b, &.{stagingDir, "v8", "obj", "libv8_monolith.a"})
-            })
-        }),
-        if (options.optimize == .Debug) "-DCMAKE_BUILD_TYPE=Debug" else "-DCMAKE_BUILD_TYPE=Release",
-    });
-
-    if (options.CC) |CC| cmake.setEnvironmentVariable("CC", CC);
-    if (options.CXX) |CXX| cmake.setEnvironmentVariable("CXX", CXX);
-
-    const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4"
-    });
-    ninja.cwd = o1out;
-    cmake.cwd = o1out;
-    ninja.step.dependOn(&cmake.step);
-    return &ninja.step;
+    return collapse(b, 
+            try std.mem.join(b.allocator, " ", gnargs.items));
 }

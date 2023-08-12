@@ -50,6 +50,4 @@ jobs:
           -Doptimize=ReleaseFast \
           -Dbuild-js=true \
           -Dbuild-py=true \
-          -Dv8-toolchain=$(brew --prefix llvm@15) \
-          -DCC=$(brew --prefix llvm@15)/bin/clang \
-          -DCXX=$(brew --prefix llvm@15)/bin/clang++ 
+          -Dv8-toolchain=$(brew --prefix llvm@15)
