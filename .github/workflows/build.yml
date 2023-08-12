@@ -48,6 +48,6 @@ jobs:
       run: |
         zig build \
           -Doptimize=ReleaseFast \
-          -Dprep-staging=true \
-          -Drelease-tgz=true \
+          -Dbuild-js=true \
+          -Dbuild-py=true \
           -Dv8-toolchain=$(brew --prefix llvm@15)

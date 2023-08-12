@@ -6,10 +6,11 @@ pub fn build(b: *Builder) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const staging = try join(b.allocator, &.{"zig-out", "staging"}); // b.getInstallPath(.prefix, "staging");
+    const staging = try join(b.allocator, &.{"zig-out", "staging"});
     const mrt = b.addExecutable(.{ 
         .name = "mrt", 
-        .root_source_file = std.build.FileSource.relative("src/mrt.zig"), 
+        .root_source_file = std.build.FileSource.relative(
+            try join(b.allocator, &.{"src", "mrt.zig"})), 
         .target = target, 
         .optimize = optimize 
     });
@@ -41,7 +42,6 @@ pub fn build(b: *Builder) !void {
     const CC = b.option([]const u8, "CC", "cc for staging");
     const CXX = b.option([]const u8, "CXX", "cxx for staging");
 
-    const prep = b.option(bool, "prep-staging", "builds v8, cpython, 101");
     const options: StagePrepOptions = .{ 
         .target = target, 
         .optimize = optimize, 
@@ -49,25 +49,16 @@ pub fn build(b: *Builder) !void {
         .CC = CC, .CXX = CXX 
     };
 
-    if (safeUnwrap(prep)) {
-        const stage = try prepStaging(b, options);
-        mrt.step.dependOn(stage);
+    const js = b.option(bool, "build-js", "build only v8");
+    if (safeUnwrap(js)) {
+        const v8 = try makeV8Stage(b, options);
+        const o1 = try make101Stage(b, options);
+        o1.dependOn(v8);
+        mrt.step.dependOn(o1);
     }
 
-    const relTgz = b.option(bool, "release-tgz", "builds release tarball");
-    if (safeUnwrap(relTgz)) {
-        const release = try prepRelease(b);
-        b.getInstallStep().dependOn(release);
-    }
-
-    const oo1 = b.option(bool, "oo1", "build only 101");
-    if (safeUnwrap(oo1)) {
-        const s = try make101Stage(b, options);
-        mrt.step.dependOn(s);
-    } 
-
-    const opy = b.option(bool, "opy", "build only python");
-    if (safeUnwrap(opy)) {
+    const bpy = b.option(bool, "build-py", "build only python");
+    if (safeUnwrap(bpy)) {
         const py = try makePyStage(b, options);
         mrt.step.dependOn(py);
     }
@@ -89,32 +80,6 @@ const StagePrepOptions = struct {
     CC: ?[]const u8,
     CXX: ?[]const u8,
 };
-
-fn prepStaging(
-    b: *Builder, 
-    options: StagePrepOptions
-) !*std.build.Step {
-    const stage = b.step("staging-step", "builds all of staging");
-    const py = try makePyStage(b, options);
-    stage.dependOn(py);
-
-    const j = b.step("js", "builds v8 and 101");
-    const v8 = try makeV8Stage(b, options);
-    const o1 = try make101Stage(b, options);
-    o1.dependOn(v8);
-    j.dependOn(o1);
-
-    stage.dependOn(j);
-    return stage;
-}
-
-// assemble release tarball
-fn prepRelease(b: *Builder) !*std.build.Step {
-    const rel = b.step("release-tarball", "");
-    const f = b.addSystemCommand(&.{ "echo", "'mrt'" });
-    rel.dependOn(&f.step);
-    return rel;
-}
 
 fn rp(b: *Builder, parts: []const []const u8) ![]const u8 {
     const joined = try join(b.allocator, parts);
@@ -144,7 +109,6 @@ fn makePyStage(
     options: StagePrepOptions
 ) !*std.build.Step {
     const stagingDir = b.getInstallPath(.prefix, "staging");
-    const py = b.step("python", "build-py");
     const pyout = try rp(b, &.{ stagingDir, "cpython" });
     const pysrc = try rp(b, &.{ "deps", "cpython" });
     const cf = b.addSystemCommand(&.{ 
@@ -164,68 +128,64 @@ fn makePyStage(
     mk.setEnvironmentVariable("MODULE_XXLIMITED_35_STATE", "no");
     mk.cwd = pysrc;
     mk.step.dependOn(&cf.step);
-    py.dependOn(&mk.step);
-    return py;
+    return &mk.step;
 }
 
 fn makeV8Stage(
     b: *Builder, 
     options: StagePrepOptions
 ) !*std.build.Step {
-    std.debug.print("building v8", .{});
     const stagingDir = b.getInstallPath(.prefix, "staging");
-    const v8 = b.step("v8", "build-v8");
     const v8src = try rp(b, &.{"deps", "v8"});
     const v8out = try rp(b, &.{stagingDir, "v8"});
     var gnargs = std.ArrayList([]const u8).init(b.allocator);
     defer gnargs.deinit();
 
+    const basegn =
+        \\is_component_build=false
+        \\v8_monolithic=true
+        \\v8_use_external_startup_data=false
+        \\v8_generate_external_defines_header=true
+        \\v8_enable_31bit_smis_on_64bit_arch=true
 
-    const basegn = 
-    \\is_component_build=false
-    \\v8_monolithic=true
-    \\v8_use_external_startup_data=false
-    \\v8_generate_external_defines_header=true
-    \\v8_enable_31bit_smis_on_64bit_arch=true
-
-    \\use_goma=false
-    \\v8_enable_fast_mksnapshot=false
-    \\v8_enable_snapshot_compression=true
-    \\v8_enable_webassembly=false
-    \\v8_enable_i18n_support=false
+        \\use_goma=false
+        \\v8_enable_fast_mksnapshot=false
+        \\v8_enable_snapshot_compression=true
+        \\v8_enable_webassembly=false
+        \\v8_enable_i18n_support=false
     
-    \\cppgc_enable_young_generation=false
-    \\cppgc_enable_caged_heap=false
-    \\v8_enable_shared_ro_heap=false
-    \\v8_enable_pointer_compression=false
-    \\v8_enable_verify_heap=false
-    \\v8_enable_sandbox=false
+        \\cppgc_enable_young_generation=false
+        \\cppgc_enable_caged_heap=false
+        \\v8_enable_shared_ro_heap=false
+        \\v8_enable_pointer_compression=false
+        \\v8_enable_verify_heap=false
+        \\v8_enable_sandbox=false
 
-    \\use_custom_libcxx=false
-    \\clang_use_chrome_plugins=false
+        \\use_custom_libcxx=false
+        \\clang_use_chrome_plugins=false
     ;
     try gnargs.append(basegn);
 
     switch (options.target.getOsTag()) {
         .linux => {
-            const linux = 
-            \\v8_enable_private_mapping_fork_optimization=true
-            \\clang_base_path="/usr"
-            \\is_clang=false
-            \\target_os="linux"
-            \\host_os="linux"
-            \\cc_wrapper="ccache"
+            const linux =
+                \\v8_enable_private_mapping_fork_optimization=true
+                \\clang_base_path="/usr"
+                \\is_clang=false
+                \\target_os="linux"
+                \\host_os="linux"
+                \\cc_wrapper="ccache"
             ;
             try gnargs.append(linux);
         },
         .macos => {
-            const mac = 
-            \\treat_warnings_as_errors=false
-            \\use_lld=false
-            \\use_gold=false
-            \\target_os="mac"
-            \\host_os="mac"
-            \\cc_wrapper="ccache"
+            const mac =
+                \\treat_warnings_as_errors=false
+                \\use_lld=false
+                \\use_gold=false
+                \\target_os="mac"
+                \\host_os="mac"
+                \\cc_wrapper="ccache"
             ;
             if (options.toolchain) |chain| {
                 try gnargs.append(b.fmt("clang_base_path=\"{s}\"", .{chain}));
@@ -239,32 +199,32 @@ fn makeV8Stage(
 
     switch (options.target.getCpuArch()) {
         .arm, .aarch64 => {
-            const arch = try collapse(b, 
-            \\target_cpu="arm64"
-            \\host_cpu="arm64"
-        );
+            const arch = try collapse(b,
+                \\target_cpu="arm64"
+                \\host_cpu="arm64"
+            );
             try gnargs.append(arch);
         },
         .x86_64 => {
-            try gnargs.append(try collapse(b, 
-            \\target_cpu="x64"
-            \\host_cpu="x64"
+            try gnargs.append(try collapse(b,
+                \\target_cpu="x64"
+                \\host_cpu="x64"
         ));},
         else => unreachable
     }
 
     if (options.optimize == .Debug) {
-        const debug = 
-        \\is_debug=true
-        \\symbol_level=1
-        \\v8_optimized_debug=true
+        const debug =
+            \\is_debug=true
+            \\symbol_level=1
+            \\v8_optimized_debug=true
         ;
         try gnargs.append(debug);
     }
 
     const gnbin = try rp(b, &.{"tools", "gn"});
     const gngen = b.addSystemCommand(&.{
-        gnbin, "gen", 
+        gnbin, "gen",
         v8out,
         b.fmt("--args={s}", .{ try collapse(b, 
             try std.mem.join(b.allocator, " ", gnargs.items))}),
@@ -274,10 +234,9 @@ fn makeV8Stage(
     const ninja = b.addSystemCommand(&.{
         "ninja", "-j4", "v8_monolith"
     });
-    ninja.cwd = v8out; 
+    ninja.cwd = v8out;
     ninja.step.dependOn(&gngen.step);
-    v8.dependOn(&ninja.step);
-    return v8;
+    return &ninja.step;
 }
 
 fn make101Stage(
@@ -285,12 +244,11 @@ fn make101Stage(
     options: StagePrepOptions
 ) !*std.build.Step {
     const stagingDir = b.getInstallPath(.prefix, "staging");
-    const o1 = b.step("101", "builds 101");
     const o1out = try rp(b, &.{stagingDir, "101"});
     const root = std.Build.FileSource.relative(".").getPath(b);
     const cwd = std.fs.cwd();
     cwd.access(o1out, .{ .mode = .read_only }) catch try cwd.makePath(o1out);
-    
+
     // TODO support windows
     const cmake = b.addSystemCommand(&.{
         "cmake", root, "-G", "Ninja",
@@ -307,11 +265,10 @@ fn make101Stage(
     if (options.CXX) |CXX| cmake.setEnvironmentVariable("CXX", CXX);
 
     const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "--quiet"
+        "ninja", "-j4"
     });
     ninja.cwd = o1out;
     cmake.cwd = o1out;
     ninja.step.dependOn(&cmake.step);
-    o1.dependOn(&ninja.step);
-    return o1;
+    return &ninja.step;
 }
