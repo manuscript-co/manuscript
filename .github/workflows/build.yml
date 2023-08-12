@@ -49,7 +49,7 @@ jobs:
         zig build \
           -Doptimize=ReleaseFast \
           -Dprep-staging=true \
-          -Drelease-tarball=true \
+          -Drelease-tgz=true \
           -Dv8-toolchain=$(brew --prefix llvm@15) \
           -DCC=$(brew --prefix llvm@15)/clang \ 
           -DCXX=$(brew --prefix llvm@15)/clang++
