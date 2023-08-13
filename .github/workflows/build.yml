@@ -24,6 +24,7 @@ jobs:
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
         max-size: 10G
+        key: ${{ github.job }}-macos
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
