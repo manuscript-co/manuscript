@@ -166,7 +166,7 @@ fn makePy(
     if (options.CXX) |CXX| cf.setEnvironmentVariable("CXX", CXX);
     cf.cwd = pysrc;
 
-    const mk = b.addSystemCommand(&.{ "make", "-s", "-j4", "altinstall" });
+    const mk = b.addSystemCommand(&.{ "make", "-j1", "altinstall" });
     mk.cwd = pysrc;
     mk.step.dependOn(&cf.step);
     return &mk.step;
