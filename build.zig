@@ -123,7 +123,6 @@ fn makePyStage(
         "--disable-shared",
         "--with-static-libpython",
         b.fmt("--prefix={s}", .{pyout}), 
-        "-q" 
     });
 
     if (options.optimize == .Debug) cf.addArg("--with-pydebug"); 
