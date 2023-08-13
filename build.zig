@@ -65,10 +65,43 @@ pub fn build(b: *Builder) !void {
     const bpy = b.option(bool, "build-py", "build only python");
     if (safeUnwrap(bpy)) {
         const py = try makePyStage(b, options);
-        mrt.step.dependOn(py);
+        const funWithflags = try setupCpythonFlags(b, options, mrt);
+        funWithflags.dependOn(py);
+        mrt.step.dependOn(funWithflags);
+    } else {
+        const funWithflags = try setupCpythonFlags(b, options, mrt);
+        mrt.step.dependOn(funWithflags);
     }
 
     b.installArtifact(mrt);
+}
+
+fn setupCpythonFlags(
+    b: *Builder, 
+    _: StagePrepOptions,
+    _: *std.Build.Step.Compile
+) !*std.build.Step {
+    const s = b.step("cpython-flags", "");
+    s.makeFn = &flags;
+    return s;
+}
+
+fn flags(
+    s: *std.build.Step, _: *std.Progress.Node
+) !void {
+    const cf = try rp(s.owner, &.{
+        "zig-out", "staging", "cpython", "bin", "python3.12-config"
+    });
+    var cp = std.ChildProcess.init(&.{
+        cf,
+        "--embed",
+        "--ldflags"
+    }, s.owner.allocator);
+    _ = try cp.spawnAndWait();
+    if (cp.stdout) |out| {
+        const f = try out.readToEndAlloc(s.owner.allocator, 0);
+        std.log.debug("got flags {s}", .{f});
+    }
 }
 
 inline fn safeUnwrap(v: ?bool) bool {
@@ -119,6 +152,7 @@ fn makePyStage(
     const pysrc = try rp(b, &.{ "deps", "cpython" });
     const cf = b.addSystemCommand(&.{ 
         "./configure", 
+        "--config-cache",
         "--disable-test-modules", 
         "--disable-shared",
         "--with-static-libpython",
