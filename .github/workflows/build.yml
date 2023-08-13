@@ -25,6 +25,7 @@ jobs:
       with:
         max-size: 10G
         key: ${{ github.job }}-macos
+        append-timestamp: false
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -52,7 +53,7 @@ jobs:
           -Dv8-toolchain=$(brew --prefix llvm@15)
     - name: check config
       run: |
-        zig-out/staging/cpython/bin/python3-config --embed --ldflags
+        bash ./zig-out/staging/cpython/bin/python3.12-config --embed --ldflags
     - name: build mrt
       run: |
         zig build -Doptimize=ReleaseFast -Dmrt=true
