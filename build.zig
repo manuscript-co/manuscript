@@ -6,28 +6,59 @@ pub fn build(b: *Builder) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const toolchain = b.option([]const u8, "v8-toolchain", "toolchain to build v8");
+    const CC = b.option([]const u8, "CC", "cc for staging");
+    const CXX = b.option([]const u8, "CXX", "cxx for staging");
+
+    const options: StagePrepOptions = .{ 
+        .target = target, 
+        .optimize = optimize, 
+        .toolchain = toolchain, 
+        .CC = CC, .CXX = CXX 
+    };
+
+    const js = b.option(bool, "js", "build only v8");
+    if (safeUnwrap(js)) {
+        const v8 = try makeV8(b, options);
+        b.getInstallStep().dependOn(v8);
+    }
+
+    const bpy = b.option(bool, "py", "build only python");
+    if (safeUnwrap(bpy)) {
+        const py = try makePy(b, options);
+        b.getInstallStep().dependOn(py);
+    } 
+    
+    const bmrt = b.option(bool, "mrt", "build only mrt");
+    if (safeUnwrap(bmrt)) {
+        const mrt = try makeMrt(b, options);
+        b.installArtifact(mrt);
+    }
+}
+
+fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
     const staging = try join(b.allocator, &.{"zig-out", "staging"});
     const mrt = b.addExecutable(.{ 
         .name = "mrt", 
         .root_source_file = std.build.FileSource.relative(
             try join(b.allocator, &.{"src", "mrt.zig"})), 
-        .target = target, 
-        .optimize = optimize 
+        .target = options.target, 
+        .optimize = options.optimize 
     });
 
     mrt.addIncludePath(try lp(b, &.{
         staging, "cpython", "include", 
-        if (optimize == .Debug) "python3.12d" else "python3.12"
+        if (options.optimize == .Debug) "python3.12d" else "python3.12"
     }));
     mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
 
     // python
     mrt.addAssemblyFile(try lp(b, &.{ 
         staging, "cpython", "lib",
-        if (optimize == .Debug) "libpython3.12d.a" else "libpython3.12.a"
+        if (options.optimize == .Debug) "libpython3.12d.a" else "libpython3.12.a"
     }));
 
-    if (target.getOsTag() == .macos) {
+    if (options.target.getOsTag() == .macos) {
         mrt.linkSystemLibrary("z");
         mrt.linkFramework("Foundation");
         mrt.linkFramework("SystemConfiguration");
@@ -44,36 +75,7 @@ pub fn build(b: *Builder) !void {
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
     mrt.linkLibCpp();
-
-    const toolchain = b.option([]const u8, "v8-toolchain", "toolchain to build v8");
-    const CC = b.option([]const u8, "CC", "cc for staging");
-    const CXX = b.option([]const u8, "CXX", "cxx for staging");
-
-    const options: StagePrepOptions = .{ 
-        .target = target, 
-        .optimize = optimize, 
-        .toolchain = toolchain, 
-        .CC = CC, .CXX = CXX 
-    };
-
-    const js = b.option(bool, "build-js", "build only v8");
-    if (safeUnwrap(js)) {
-        const v8 = try makeV8Stage(b, options);
-        mrt.step.dependOn(v8);
-    }
-
-    const bpy = b.option(bool, "build-py", "build only python");
-    if (safeUnwrap(bpy)) {
-        const py = try makePyStage(b, options);
-        const funWithflags = try setupCpythonFlags(b, options, mrt);
-        funWithflags.dependOn(py);
-        mrt.step.dependOn(funWithflags);
-    } else {
-        const funWithflags = try setupCpythonFlags(b, options, mrt);
-        mrt.step.dependOn(funWithflags);
-    }
-
-    b.installArtifact(mrt);
+    return mrt;
 }
 
 fn setupCpythonFlags(
@@ -143,7 +145,7 @@ fn escapeDouble(b: *Builder, s: []const u8) ![]const u8 {
     return out;
 }
 
-fn makePyStage(
+fn makePy(
     b: *Builder, 
     options: StagePrepOptions
 ) !*std.build.Step {
@@ -170,7 +172,7 @@ fn makePyStage(
     return &mk.step;
 }
 
-fn makeV8Stage(
+fn makeV8(
     b: *Builder, 
     options: StagePrepOptions
 ) !*std.build.Step {

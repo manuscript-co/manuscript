@@ -44,13 +44,14 @@ jobs:
       run: |
         /usr/bin/clang -v
         brew --prefix llvm@15
-    - name: build release
+    - name: build deps
       run: |
-        zig build \
-          -Doptimize=ReleaseFast \
-          -Dbuild-js=true \
-          -Dbuild-py=true \
+        zig build -Doptimize=ReleaseFast \
+          -Djs=true -Dpy=true \
           -Dv8-toolchain=$(brew --prefix llvm@15)
     - name: check config
       run: |
         zig-out/staging/cpython/bin/python3-config --embed --ldflags
+    - name: build mrt
+      run: |
+        zig build -Doptimize=ReleaseFast -Dmrt=true
