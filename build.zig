@@ -141,7 +141,7 @@ fn makePy(
     mk.cwd = pysrc;
     mk.step.dependOn(&cf.step);
     
-    const mkinstall = b.addSystemCommand(&.{ "make", "altinstall" });
+    const mkinstall = b.addSystemCommand(&.{ "make", "install" });
     mkinstall.cwd = pysrc;
     mkinstall.step.dependOn(&mk.step);
     return &mk.step;
