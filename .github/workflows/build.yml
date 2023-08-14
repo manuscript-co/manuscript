@@ -51,10 +51,6 @@ jobs:
         zig build -Doptimize=ReleaseFast \
           -Djs=true -Dpy=true \
           -Dv8-toolchain=$(brew --prefix llvm@15)
-    - name: check config
-      run: |
-        ls -al ./zig-out/staging/cpython/bin/
-        bash ./zig-out/staging/cpython/bin/python3-config --embed --ldflags
     - name: build mrt
       run: |
         zig build -Doptimize=ReleaseFast -Dmrt=true
