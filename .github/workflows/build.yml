@@ -53,9 +53,8 @@ jobs:
           -Dv8-toolchain=$(brew --prefix llvm@15)
     - name: ls
       run: |
-        ls ./
-        ls ./zig-out
-        ls ./zig-out/cpython
+        brew install tree
+        tree ./zig-out
     - name: build mrt
       run: |
         zig build -Doptimize=ReleaseFast -Dmrt=true
