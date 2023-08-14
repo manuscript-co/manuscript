@@ -122,9 +122,9 @@ fn makePy(
     const stagingDir = b.getInstallPath(.prefix, "staging");
     const pyout = try rp(b, &.{ stagingDir, "cpython" });
     const pysrc = try rp(b, &.{ "deps", "cpython" });
+    std.log.debug("pyout {s}", .{pyout});
     const cf = b.addSystemCommand(&.{ 
         "./configure", 
-        "--config-cache",
         "--disable-test-modules", 
         "--disable-shared",
         "--with-static-libpython",
@@ -141,7 +141,7 @@ fn makePy(
     mk.cwd = pysrc;
     mk.step.dependOn(&cf.step);
     
-    const mkinstall = b.addSystemCommand(&.{ "make", "install" });
+    const mkinstall = b.addSystemCommand(&.{ "make", "altinstall" });
     mkinstall.cwd = pysrc;
     mkinstall.step.dependOn(&mk.step);
     return &mk.step;
