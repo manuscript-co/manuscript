@@ -36,6 +36,14 @@ pub fn build(b: *Builder) !void {
     }
 }
 
+const StagePrepOptions = struct {
+    target: std.zig.CrossTarget,
+    optimize: std.builtin.Mode,
+    toolchain: ?[]const u8,
+    CC: ?[]const u8,
+    CXX: ?[]const u8,
+};
+
 fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
     const staging = try join(b.allocator, &.{"zig-out", "staging"});
     const mrt = b.addExecutable(.{ 
@@ -53,6 +61,7 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
     mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
 
     // python
+    try setupCpythonFlags(b, options, mrt);
     mrt.addAssemblyFile(try lp(b, &.{ 
         staging, "cpython", "lib",
         if (options.optimize == .Debug) "libpython3.12d.a" else "libpython3.12.a"
@@ -82,61 +91,22 @@ fn setupCpythonFlags(
     b: *Builder, 
     _: StagePrepOptions,
     _: *std.Build.Step.Compile
-) !*std.build.Step {
-    const s = b.step("cpython-flags", "");
-    s.makeFn = &flags;
-    return s;
-}
-
-fn flags(
-    s: *std.build.Step, _: *std.Progress.Node
 ) !void {
-    const cf = try rp(s.owner, &.{
-        "zig-out", "staging", "cpython", "bin", "python3.12-config"
+    const stagingDir = b.getInstallPath(.prefix, "staging");
+    const pyout = try rp(b, &.{ stagingDir, "cpython" });
+    const cf = try rp(b, &.{
+        pyout, "bin", "python3.12-config"
     });
     var cp = std.ChildProcess.init(&.{
         cf,
         "--embed",
         "--ldflags"
-    }, s.owner.allocator);
+    }, b.allocator);
     _ = try cp.spawnAndWait();
     if (cp.stdout) |out| {
-        const f = try out.readToEndAlloc(s.owner.allocator, 0);
+        const f = try out.readToEndAlloc(b.allocator, 0);
         std.log.debug("got flags {s}", .{f});
     }
-}
-
-inline fn safeUnwrap(v: ?bool) bool {
-    if (v) |vu| {
-        if (vu) return true;
-    }
-    return false;
-}
-
-
-const StagePrepOptions = struct {
-    target: std.zig.CrossTarget,
-    optimize: std.builtin.Mode,
-    toolchain: ?[]const u8,
-    CC: ?[]const u8,
-    CXX: ?[]const u8,
-};
-
-fn rp(b: *Builder, parts: []const []const u8) ![]const u8 {
-    const joined = try join(b.allocator, parts);
-    if (std.fs.path.isAbsolute(joined)) return joined;
-    return std.build.FileSource.relative(joined).getPath(b.getInstallStep().owner);
-}
-
-fn lp(b: *Builder, parts: []const []const u8) !std.Build.LazyPath {
-    const joined = try join(b.allocator, parts);
-    return std.build.FileSource.relative(joined);
-}
-
-fn collapse(b: *Builder, s: []const u8) ![]const u8 {
-    const out = try b.allocator.alloc(u8, s.len);
-    _ = std.mem.replace(u8, s, "\n", " ", out);
-    return out;
 }
 
 fn escapeDouble(b: *Builder, s: []const u8) ![]const u8 {
@@ -287,4 +257,28 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
     }
     return collapse(b, 
             try std.mem.join(b.allocator, " ", gnargs.items));
+}
+
+fn rp(b: *Builder, parts: []const []const u8) ![]const u8 {
+    const joined = try join(b.allocator, parts);
+    if (std.fs.path.isAbsolute(joined)) return joined;
+    return std.build.FileSource.relative(joined).getPath(b.getInstallStep().owner);
+}
+
+fn lp(b: *Builder, parts: []const []const u8) !std.Build.LazyPath {
+    const joined = try join(b.allocator, parts);
+    return std.build.FileSource.relative(joined);
+}
+
+fn collapse(b: *Builder, s: []const u8) ![]const u8 {
+    const out = try b.allocator.alloc(u8, s.len);
+    _ = std.mem.replace(u8, s, "\n", " ", out);
+    return out;
+}
+
+inline fn safeUnwrap(v: ?bool) bool {
+    if (v) |vu| {
+        if (vu) return true;
+    }
+    return false;
 }
