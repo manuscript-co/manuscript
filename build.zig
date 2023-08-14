@@ -144,7 +144,7 @@ fn makePy(
     const mkinstall = b.addSystemCommand(&.{ "make", "altinstall" });
     mkinstall.cwd = pysrc;
     mkinstall.step.dependOn(&mk.step);
-    return &mk.step;
+    return &mkinstall.step;
 }
 
 fn makeV8(

@@ -54,7 +54,8 @@ jobs:
     - name: ls
       run: |
         brew install tree
-        tree ./zig-out
+        ls ./zig-out/staging
+        tree ./zig-out/staging/cpython
     - name: build mrt
       run: |
         zig build -Doptimize=ReleaseFast -Dmrt=true
