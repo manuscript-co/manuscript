@@ -53,7 +53,7 @@ jobs:
           -Dv8-toolchain=$(brew --prefix llvm@15)
     - name: check config
       run: |
-        bash ./zig-out/staging/cpython/bin/python3.12-config --embed --ldflags
+        ./zig-out/staging/cpython/bin/python3.12-config --embed --ldflags
     - name: build mrt
       run: |
         zig build -Doptimize=ReleaseFast -Dmrt=true

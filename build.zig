@@ -159,6 +159,7 @@ fn makePy(
         "--disable-shared",
         "--with-static-libpython",
         b.fmt("--prefix={s}", .{pyout}), 
+        "-q"
     });
 
     if (options.optimize == .Debug) cf.addArg("--with-pydebug"); 
@@ -166,9 +167,13 @@ fn makePy(
     if (options.CXX) |CXX| cf.setEnvironmentVariable("CXX", CXX);
     cf.cwd = pysrc;
 
-    const mk = b.addSystemCommand(&.{ "make", "-j1", "altinstall" });
+    const mk = b.addSystemCommand(&.{ "make", "-j4", "-s" });
     mk.cwd = pysrc;
     mk.step.dependOn(&cf.step);
+    
+    const mkinstall = b.addSystemCommand(&.{ "make", "altinstall" });
+    mkinstall.cwd = pysrc;
+    mkinstall.step.dependOn(&mk.step);
     return &mk.step;
 }
 
