@@ -111,8 +111,6 @@ fn addCpython(
     mrt.linkFramework("CoreFoundation");
 }
 
-
-
 fn escapeDouble(b: *Builder, s: []const u8) ![]const u8 {
     const out = try b.allocator.alloc(u8, std.mem.replacementSize(u8, s, "\"", "\\\""));
     _ = std.mem.replace(u8, s, "\"", "\\\"", out);
@@ -134,7 +132,8 @@ fn makePy(
         "--disable-shared",
         "--with-static-libpython",
         b.fmt("--prefix={s}", .{pyout}), 
-        "ac_cv_lib_intl_textdomain=no"
+        "ac_cv_lib_intl_textdomain=no",
+        "ac_cv_header_libintl_h=no"
     });
 
     if (options.optimize == .Debug) cf.addArg("--with-pydebug"); 
