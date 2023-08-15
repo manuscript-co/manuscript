@@ -62,16 +62,11 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
 
     // python
     try setupCpythonFlags(b, options, mrt);
-    mrt.addAssemblyFile(try lp(b, &.{ 
-        staging, "cpython", "lib",
-        if (options.optimize == .Debug) "libpython3.12d.a" else "libpython3.12.a"
-    }));
+    // mrt.addAssemblyFile(try lp(b, &.{ 
+    //     staging, "cpython", "lib",
+    //     if (options.optimize == .Debug) "libpython3.12d.a" else "libpython3.12.a"
+    // }));
 
-    if (options.target.getOsTag() == .macos) {
-        mrt.linkSystemLibrary("z");
-        mrt.linkFramework("Foundation");
-        mrt.linkFramework("SystemConfiguration");
-    }
 
     mrt.addAssemblyFile(try lp(b, &.{
         "deps", "cpython", "Modules", "_decimal", "libmpdec", "libmpdec.a"
@@ -90,7 +85,7 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
 fn setupCpythonFlags(
     b: *Builder, 
     _: StagePrepOptions,
-    _: *std.Build.Step.Compile
+    mrt: *std.Build.Step.Compile
 ) !void {
     const stagingDir = b.getInstallPath(.prefix, "staging");
     const pyout = try rp(b, &.{ stagingDir, "cpython" });
@@ -106,8 +101,16 @@ fn setupCpythonFlags(
     if (cp.stdout) |out| {
         const f = try out.readToEndAlloc(b.allocator, 0);
         std.log.debug("got flags {s}", .{f});
+        //-L/Users/runner/work/manuscript/manuscript/zig-out/staging/cpython/lib/python3.12/config-3.12-darwin -lpython3.12 -lintl -ldl -framework CoreFoundation
     }
+    mrt.addLibraryPath(try lp(b, &.{pyout, "lib", "python3.12"}));
+    mrt.linkSystemLibrary("python3.12");
+    mrt.linkSystemLibrary("intl");
+    mrt.linkSystemLibrary("dl");
+    mrt.linkFramework("CoreFoundation");
 }
+
+
 
 fn escapeDouble(b: *Builder, s: []const u8) ![]const u8 {
     const out = try b.allocator.alloc(u8, std.mem.replacementSize(u8, s, "\"", "\\\""));
@@ -125,6 +128,7 @@ fn makePy(
     std.log.debug("pyout {s}", .{pyout});
     const cf = b.addSystemCommand(&.{ 
         "./configure", 
+        "--config-cache",
         "--disable-test-modules", 
         "--disable-shared",
         "--with-static-libpython",
