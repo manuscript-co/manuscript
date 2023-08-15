@@ -104,7 +104,7 @@ fn addCpython(
         else "python3.12"
     );
 
-    mrt.linkSystemLibrary("intl");
+    // mrt.linkSystemLibrary("intl");
     mrt.linkSystemLibrary("z");
     mrt.linkSystemLibrary("dl");
     mrt.linkFramework("SystemConfiguration");
@@ -134,7 +134,7 @@ fn makePy(
         "--disable-shared",
         "--with-static-libpython",
         b.fmt("--prefix={s}", .{pyout}), 
-        "-q"
+        "ac_cv_lib_intl_textdomain=no"
     });
 
     if (options.optimize == .Debug) cf.addArg("--with-pydebug"); 
@@ -146,7 +146,7 @@ fn makePy(
     mk.cwd = pysrc;
     mk.step.dependOn(&cf.step);
     
-    const mkinstall = b.addSystemCommand(&.{ "make", "altinstall" });
+    const mkinstall = b.addSystemCommand(&.{ "make", "install" });
     mkinstall.cwd = pysrc;
     mkinstall.step.dependOn(&mk.step);
     return &mkinstall.step;
