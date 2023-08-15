@@ -131,7 +131,8 @@ fn makePy(
         "--disable-test-modules", 
         "--disable-shared",
         "--with-static-libpython",
-        b.fmt("--prefix={s}", .{pyout}), 
+        b.fmt("--prefix={s}", .{pyout}),
+        "-q",
         "ac_cv_lib_intl_textdomain=no",
         "ac_cv_header_libintl_h=no"
     });
