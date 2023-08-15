@@ -87,8 +87,8 @@ fn setupCpythonFlags(
     _: StagePrepOptions,
     mrt: *std.Build.Step.Compile
 ) !void {
-    const stagingDir = b.getInstallPath(.prefix, "staging");
-    const pyout = try rp(b, &.{ stagingDir, "cpython" });
+    const staging = try join(b.allocator, &.{"zig-out", "staging"});
+    const pyout = try rp(b, &.{ staging, "cpython" });
     const cf = try rp(b, &.{
         pyout, "bin", "python3.12-config"
     });
