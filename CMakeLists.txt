@@ -1,7 +1,0 @@
-cmake_minimum_required(VERSION 3.26)
-project(101)
-set(CMAKE_CXX_STANDARD 20)
-add_library(101 STATIC src/101/101.cpp)
-include_directories("./deps/v8/include")
-# include_directories("./staging/v8/gen/include")
-# target_link_libraries(101 PRIVATE "./staging/v8/obj/libv8_monolith.a")
