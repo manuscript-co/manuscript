@@ -54,20 +54,12 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
         .optimize = options.optimize 
     });
 
+    // python
+    try addCpython(b, options, mrt);
     mrt.addIncludePath(try lp(b, &.{
         staging, "cpython", "include", 
         if (options.optimize == .Debug) "python3.12d" else "python3.12"
-    }));
-    mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
-
-    // python
-    try setupCpythonFlags(b, options, mrt);
-    // mrt.addAssemblyFile(try lp(b, &.{ 
-    //     staging, "cpython", "lib",
-    //     if (options.optimize == .Debug) "libpython3.12d.a" else "libpython3.12.a"
-    // }));
-
-
+    })); 
     mrt.addAssemblyFile(try lp(b, &.{
         "deps", "cpython", "Modules", "_decimal", "libmpdec", "libmpdec.a"
     }));
@@ -76,19 +68,19 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
     }));
 
     // javascript
+    mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
     mrt.linkLibCpp();
     return mrt;
 }
 
-fn setupCpythonFlags(
+fn addCpython(
     b: *Builder, 
-    _: StagePrepOptions,
+    options: StagePrepOptions,
     mrt: *std.Build.Step.Compile
 ) !void {
-    const staging = try join(b.allocator, &.{"zig-out", "staging"});
-    const pyout = try rp(b, &.{ staging, "cpython" });
+    const pyout = try join(b.allocator, &.{"zig-out", "staging", "cpython"});
     const cf = try rp(b, &.{
         pyout, "bin", "python3.12-config"
     });
@@ -100,13 +92,22 @@ fn setupCpythonFlags(
     _ = try cp.spawnAndWait();
     if (cp.stdout) |out| {
         const f = try out.readToEndAlloc(b.allocator, 0);
-        std.log.debug("got flags {s}", .{f});
-        //-L/Users/runner/work/manuscript/manuscript/zig-out/staging/cpython/lib/python3.12/config-3.12-darwin -lpython3.12 -lintl -ldl -framework CoreFoundation
+        std.log.debug("{s}", .{f});
     }
-    mrt.addLibraryPath(try lp(b, &.{pyout, "lib", "python3.12"}));
-    mrt.linkSystemLibrary("python3.12");
+    mrt.addLibraryPath(try lp(b, &.{
+        pyout, "lib", "python3.12", 
+        if (options.optimize == .Debug) "config-3.12d-darwin" else "config-3.12-darwin"
+    }));
+
+    mrt.linkSystemLibrary(
+        if (options.optimize == .Debug) "python3.12d"
+        else "python3.12"
+    );
+
     mrt.linkSystemLibrary("intl");
+    mrt.linkSystemLibrary("z");
     mrt.linkSystemLibrary("dl");
+    mrt.linkFramework("SystemConfiguration");
     mrt.linkFramework("CoreFoundation");
 }
 

@@ -51,11 +51,9 @@ jobs:
         zig build -Doptimize=ReleaseFast \
           -Djs=true -Dpy=true \
           -Dv8-toolchain=$(brew --prefix llvm@15)
-    - name: ls
-      run: |
-        brew install tree
-        ls ./zig-out/staging
-        tree ./zig-out/staging/cpython
     - name: build mrt
       run: |
-        zig build -Doptimize=ReleaseFast -Dmrt=true
+        zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: tarball
+      run: |
+        bash tools/build.tgz.sh
