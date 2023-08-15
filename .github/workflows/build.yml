@@ -22,13 +22,17 @@ jobs:
       with:
         version: 0.11.0
     - uses: hendrikmuhs/ccache-action@v1.2
-    - name: build
+      with:
+        max-size: 10G
+        key: ${{ github.job }}-macos
+        append-timestamp: false
+    - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
     - name: install system dependencies
       run: |
         bash tools/mac.install.brew.deps.sh
-        pip install Jinja2
+        pip install Jinja2==3.1.2
     - name: install gn
       run: |
         tar xf deps/gn/gn-mac-amd64.zip -C tools/
@@ -42,12 +46,14 @@ jobs:
       run: |
         /usr/bin/clang -v
         brew --prefix llvm@15
-    - name: build release
+    - name: build deps
       run: |
-        zig build \
-          -Doptimize=ReleaseFast \
-          -Dprep-staging=true \
-          -Drelease-tarball=true \
-          -Dv8-toolchain=$(brew --prefix llvm@15) \
-          -DCC=$(brew --prefix llvm@15)/clang \ 
-          -DCXX=$(brew --prefix llvm@15)/clang++
+        zig build -Doptimize=ReleaseFast \
+          -Djs=true -Dpy=true \
+          -Dv8-toolchain=$(brew --prefix llvm@15)
+    - name: build mrt
+      run: |
+        zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: tarball
+      run: |
+        bash tools/build.tgz.sh
