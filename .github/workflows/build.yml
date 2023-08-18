@@ -92,7 +92,9 @@ jobs:
     - name: build py
       run: zig build -Doptimize=ReleaseFast -Dpy=true 
     - name: build js
-      run: zig build -Doptimize=ReleaseFast -Djs=true
+      run: |
+        deps/v8/build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+        zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
     - name: tarball
