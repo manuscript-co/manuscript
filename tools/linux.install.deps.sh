@@ -1,7 +1,7 @@
 
-apt-get update
+sudo apt-get update
 
-apt install xz-utils wget \
+sudo apt install xz-utils wget \
     generate-ninja=0.0~git20220118.0725d78-1 \
     ninja-build=1.10.1-1 \
     build-essential=12.9ubuntu3 \
