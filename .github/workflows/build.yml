@@ -57,3 +57,41 @@ jobs:
     - name: tarball
       run: |
         bash tools/build.tgz.sh
+
+  build_linux:
+    name: 'linux'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.11.0
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        max-size: 10G
+        key: ${{ github.job }}-linux
+        append-timestamp: false
+    - name: ccache
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+    - name: install system dependencies
+      run: |
+        bash tools/linux.install.deps.sh
+    - name: setup modules
+      run: |
+        cp tools/Setup.local deps/cpython/Modules
+    - name: fetch v8 dependencies
+      run: cd deps && bash ../tools/fetch.v8.deps.sh
+    - name: build deps
+      run: |
+        zig build -Doptimize=ReleaseFast \
+          -Djs=true -Dpy=true \
+    - name: build mrt
+      run: |
+        zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: tarball
+      run: |
+        bash tools/build.tgz.sh
