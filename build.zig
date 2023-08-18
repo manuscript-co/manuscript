@@ -127,16 +127,18 @@ fn makePy(
     std.log.debug("pyout {s}", .{pyout});
     const cf = b.addSystemCommand(&.{ 
         "./configure", 
-        "--config-cache",
         "--disable-test-modules", 
         "--disable-shared",
         "--with-static-libpython",
         b.fmt("--prefix={s}", .{pyout}),
-        "-q",
         "ac_cv_lib_intl_textdomain=no",
         "ac_cv_header_libintl_h=no"
     });
 
+    if (options.optimize != .Debug) {
+        cf.addArg("-q");
+        cf.addArg("--config-cache");
+    }
     if (options.optimize == .Debug) cf.addArg("--with-pydebug"); 
     if (options.CC) |CC| cf.setEnvironmentVariable("CC", CC);
     if (options.CXX) |CXX| cf.setEnvironmentVariable("CXX", CXX);
@@ -160,7 +162,8 @@ fn makeV8(
     const v8src = try rp(b, &.{"deps", "v8"});
     const v8out = try rp(b, &.{stagingDir, "v8"});
 
-    const gnbin = try rp(b, &.{"tools", "gn"});
+    const gnbin = if (options.target.getOsTag() == .macos) try rp(b, &.{"tools", "gn"}) else "gn";
+    
     const gngen = b.addSystemCommand(&.{
         gnbin, "gen",
         v8out,
@@ -169,8 +172,11 @@ fn makeV8(
     gngen.cwd = v8src;
 
     const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "v8_monolith", "101",  "--quiet"
+        "ninja", "-j4", "v8_monolith", "101"
     });
+    if (options.target.getOsTag() == .macos) {
+        ninja.addArg("--quiet");
+    }
     ninja.cwd = v8out;
     ninja.step.dependOn(&gngen.step);
     return &ninja.step;
@@ -208,7 +214,6 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
     switch (options.target.getOsTag()) {
         .linux => {
             const linux =
-                \\v8_enable_private_mapping_fork_optimization=true
                 \\clang_base_path="/usr"
                 \\is_clang=false
                 \\target_os="linux"
