@@ -94,9 +94,22 @@ fn addCpython(
         const f = try out.readToEndAlloc(b.allocator, 0);
         std.log.debug("{s}", .{f});
     }
+
+    const pcd = try join(b.allocator, &.{ pyout, "lib", "python3.12" });
+    const pcp = if (options.optimize == .Debug) "config-3.12d" else "config-3.12";
+
+    const platform = switch(options.target.getOsTag()) {
+        .macos => "darwin",
+        .linux => switch (options.target.getCpuArch()) {
+            .arm, .aarch64 => "aarch64-linux-gnu",
+            .x86_64 => "x86_64-linux-gnu",
+            else => unreachable
+        },
+        else => unreachable
+    };
+
     mrt.addLibraryPath(try lp(b, &.{
-        pyout, "lib", "python3.12", 
-        if (options.optimize == .Debug) "config-3.12d-darwin" else "config-3.12-darwin"
+        pcd, try std.mem.join(b.allocator, "-", &.{pcp, platform})
     }));
 
     mrt.linkSystemLibrary(
@@ -104,11 +117,18 @@ fn addCpython(
         else "python3.12"
     );
 
-    // mrt.linkSystemLibrary("intl");
-    mrt.linkSystemLibrary("z");
     mrt.linkSystemLibrary("dl");
-    mrt.linkFramework("SystemConfiguration");
-    mrt.linkFramework("CoreFoundation");
+    mrt.linkSystemLibrary("z");
+
+    if (options.target.getOsTag() == .macos) {
+        mrt.linkFramework("SystemConfiguration");
+        mrt.linkFramework("CoreFoundation");
+    }
+
+    if (options.target.getOsTag() == .linux) {
+        //mrt.addLibraryPath(try lp(b, &.{"..", "..", "usr", "lib", "aarch64-linux-gnu"}));
+        mrt.linkSystemLibrary("m");
+    }  
 }
 
 fn escapeDouble(b: *Builder, s: []const u8) ![]const u8 {
