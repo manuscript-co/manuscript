@@ -89,13 +89,12 @@ jobs:
         cp tools/linux.Setup.local deps/cpython/Modules/Setup.local
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
-    - name: build deps
-      run: |
-        zig build -Doptimize=ReleaseFast \
-          -Djs=true -Dpy=true \
+    - name: build py
+      run: zig build -Doptimize=ReleaseFast -Dpy=true 
+    - name: build js
+      run: zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
-      run: |
-        zig build -Doptimize=ReleaseSmall -Dmrt=true
+      run: zig build -Doptimize=ReleaseSmall -Dmrt=true
     - name: tarball
       run: |
         bash tools/build.tgz.sh

@@ -214,6 +214,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
     switch (options.target.getOsTag()) {
         .linux => {
             const linux =
+                \\treat_warnings_as_errors=false
                 \\clang_base_path="/usr"
                 \\is_clang=false
                 \\target_os="linux"
