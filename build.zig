@@ -240,6 +240,8 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
                 \\target_os="linux"
                 \\host_os="linux"
                 \\cc_wrapper="ccache"
+                \\use_sysroot=false
+                \\use_custom_libcxx=false
             ;
             try gnargs.append(linux);
         },

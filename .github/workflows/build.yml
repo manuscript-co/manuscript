@@ -93,7 +93,7 @@ jobs:
       run: zig build -Doptimize=ReleaseFast -Dpy=true 
     - name: build js
       run: |
-        deps/v8/build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+        sudo apt install -y pkg-config libglib2.0-dev
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
