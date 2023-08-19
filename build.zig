@@ -71,6 +71,7 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
     mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
+    //mrt.addLibraryPath(.{ .path="/usr/lib/aarch64-linux-gnu" });
     mrt.linkLibCpp();
     return mrt;
 }
@@ -126,7 +127,6 @@ fn addCpython(
     }
 
     if (options.target.getOsTag() == .linux) {
-        //mrt.addLibraryPath(try lp(b, &.{"..", "..", "usr", "lib", "aarch64-linux-gnu"}));
         mrt.linkSystemLibrary("m");
     }  
 }
@@ -214,7 +214,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
         \\v8_enable_31bit_smis_on_64bit_arch=true
 
         \\use_goma=false
-        \\v8_enable_fast_mksnapshot=false
+        \\v8_enable_fast_mksnapshot=true    
         \\v8_enable_snapshot_compression=true
         \\v8_enable_webassembly=false
         \\v8_enable_i18n_support=false
@@ -235,7 +235,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
         .linux => {
             const linux =
                 \\treat_warnings_as_errors=false
-                \\clang_base_path="/usr"
+                \\fatal_linker_warnings=false
                 \\is_clang=false
                 \\target_os="linux"
                 \\host_os="linux"
