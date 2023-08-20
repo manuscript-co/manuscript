@@ -96,6 +96,7 @@ jobs:
       run: |
         sudo apt install -y pkg-config libglib2.0-dev
         sed -i "s/\"-Wl,--disable-new-dtags\",//" deps/v8/build/config/gcc/BUILD.gn
+        sed -i "s/\"atomic\"//" deps/v8/build/config/linux/BUILD.gn
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
