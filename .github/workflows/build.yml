@@ -30,7 +30,7 @@ jobs:
         max-size: 10G
         key: ${{ github.job }}-macos
         append-timestamp: false
-        save: ${{ github.ref == 'main' && 'true' || 'false'}}
+        save: ${{ github.ref == 'ref/heads/main' && 'true' || 'false'}}
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -65,7 +65,7 @@ jobs:
 
   build_linux:
     name: 'linux'
-    runs-on: linux-ubuntu
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
     - uses: actions/checkout@v3
