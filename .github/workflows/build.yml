@@ -30,6 +30,7 @@ jobs:
         max-size: 10G
         key: ${{ github.job }}-macos
         append-timestamp: false
+        save: ${{ github.ref == 'main' && 'true' || 'false'}}
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
