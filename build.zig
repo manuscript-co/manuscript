@@ -235,6 +235,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
                 \\treat_warnings_as_errors=false
                 \\fatal_linker_warnings=false
                 \\is_clang=false
+                \\cc_wrapper="ccache"
                 \\target_os="linux"
                 \\host_os="linux"
                 \\use_lld=false
