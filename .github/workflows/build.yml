@@ -94,6 +94,10 @@ jobs:
     - name: build js
       run: |
         sudo apt install -y pkg-config libglib2.0-dev
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
