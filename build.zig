@@ -71,7 +71,6 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
     mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
-    //mrt.addLibraryPath(.{ .path="/usr/lib/aarch64-linux-gnu" });
     mrt.linkLibCpp();
     return mrt;
 }
@@ -226,7 +225,6 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
         \\v8_enable_verify_heap=false
         \\v8_enable_sandbox=false
 
-        \\use_custom_libcxx=false
         \\clang_use_chrome_plugins=false
     ;
     try gnargs.append(basegn);
@@ -240,10 +238,11 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
                 \\target_os="linux"
                 \\host_os="linux"
                 \\use_lld=false
+                \\use_gold=false
                 \\cc_wrapper="ccache"
                 \\use_sysroot=false
                 \\use_custom_libcxx=false
-                \\use_custom_libcxx_for_host=true
+                \\custom_toolchain="//:main_zig_toolchain"
             ;
             try gnargs.append(linux);
         },
@@ -254,6 +253,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
                 \\use_gold=false
                 \\target_os="mac"
                 \\host_os="mac"
+                \\use_custom_libcxx=false
                 \\cc_wrapper="ccache"
             ;
             if (options.toolchain) |chain| {
