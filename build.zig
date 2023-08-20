@@ -239,7 +239,6 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
                 \\host_os="linux"
                 \\use_lld=false
                 \\use_gold=false
-                \\cc_wrapper="ccache"
                 \\use_sysroot=false
                 \\use_custom_libcxx=false
                 \\custom_toolchain="//:main_zig_toolchain"
