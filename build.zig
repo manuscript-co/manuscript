@@ -94,9 +94,22 @@ fn addCpython(
         const f = try out.readToEndAlloc(b.allocator, 0);
         std.log.debug("{s}", .{f});
     }
+
+    const pcd = try join(b.allocator, &.{ pyout, "lib", "python3.12" });
+    const pcp = if (options.optimize == .Debug) "config-3.12d" else "config-3.12";
+
+    const platform = switch(options.target.getOsTag()) {
+        .macos => "darwin",
+        .linux => switch (options.target.getCpuArch()) {
+            .arm, .aarch64 => "aarch64-linux-gnu",
+            .x86_64 => "x86_64-linux-gnu",
+            else => unreachable
+        },
+        else => unreachable
+    };
+
     mrt.addLibraryPath(try lp(b, &.{
-        pyout, "lib", "python3.12", 
-        if (options.optimize == .Debug) "config-3.12d-darwin" else "config-3.12-darwin"
+        pcd, try std.mem.join(b.allocator, "-", &.{pcp, platform})
     }));
 
     mrt.linkSystemLibrary(
@@ -104,11 +117,17 @@ fn addCpython(
         else "python3.12"
     );
 
-    // mrt.linkSystemLibrary("intl");
-    mrt.linkSystemLibrary("z");
     mrt.linkSystemLibrary("dl");
-    mrt.linkFramework("SystemConfiguration");
-    mrt.linkFramework("CoreFoundation");
+    mrt.linkSystemLibrary("z");
+
+    if (options.target.getOsTag() == .macos) {
+        mrt.linkFramework("SystemConfiguration");
+        mrt.linkFramework("CoreFoundation");
+    }
+
+    if (options.target.getOsTag() == .linux) {
+        mrt.linkSystemLibrary("m");
+    }  
 }
 
 fn escapeDouble(b: *Builder, s: []const u8) ![]const u8 {
@@ -127,16 +146,18 @@ fn makePy(
     std.log.debug("pyout {s}", .{pyout});
     const cf = b.addSystemCommand(&.{ 
         "./configure", 
-        "--config-cache",
         "--disable-test-modules", 
         "--disable-shared",
         "--with-static-libpython",
         b.fmt("--prefix={s}", .{pyout}),
-        "-q",
         "ac_cv_lib_intl_textdomain=no",
         "ac_cv_header_libintl_h=no"
     });
 
+    if (options.optimize != .Debug) {
+        cf.addArg("-q");
+        cf.addArg("--config-cache");
+    }
     if (options.optimize == .Debug) cf.addArg("--with-pydebug"); 
     if (options.CC) |CC| cf.setEnvironmentVariable("CC", CC);
     if (options.CXX) |CXX| cf.setEnvironmentVariable("CXX", CXX);
@@ -160,7 +181,8 @@ fn makeV8(
     const v8src = try rp(b, &.{"deps", "v8"});
     const v8out = try rp(b, &.{stagingDir, "v8"});
 
-    const gnbin = try rp(b, &.{"tools", "gn"});
+    const gnbin = if (options.target.getOsTag() == .macos) try rp(b, &.{"tools", "gn"}) else "gn";
+    
     const gngen = b.addSystemCommand(&.{
         gnbin, "gen",
         v8out,
@@ -169,8 +191,11 @@ fn makeV8(
     gngen.cwd = v8src;
 
     const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "v8_monolith", "101",  "--quiet"
+        "ninja", "-j4", "v8_monolith", "101"
     });
+    if (options.target.getOsTag() == .macos) {
+        ninja.addArg("--quiet");
+    }
     ninja.cwd = v8out;
     ninja.step.dependOn(&gngen.step);
     return &ninja.step;
@@ -188,7 +213,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
         \\v8_enable_31bit_smis_on_64bit_arch=true
 
         \\use_goma=false
-        \\v8_enable_fast_mksnapshot=false
+        \\v8_enable_fast_mksnapshot=true    
         \\v8_enable_snapshot_compression=true
         \\v8_enable_webassembly=false
         \\v8_enable_i18n_support=false
@@ -200,7 +225,6 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
         \\v8_enable_verify_heap=false
         \\v8_enable_sandbox=false
 
-        \\use_custom_libcxx=false
         \\clang_use_chrome_plugins=false
     ;
     try gnargs.append(basegn);
@@ -208,12 +232,17 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
     switch (options.target.getOsTag()) {
         .linux => {
             const linux =
-                \\v8_enable_private_mapping_fork_optimization=true
-                \\clang_base_path="/usr"
+                \\treat_warnings_as_errors=false
+                \\fatal_linker_warnings=false
                 \\is_clang=false
+                \\cc_wrapper="ccache"
                 \\target_os="linux"
                 \\host_os="linux"
-                \\cc_wrapper="ccache"
+                \\use_lld=false
+                \\use_gold=false
+                \\use_sysroot=false
+                \\use_custom_libcxx=false
+                \\custom_toolchain="//:main_zig_toolchain"
             ;
             try gnargs.append(linux);
         },
@@ -224,6 +253,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
                 \\use_gold=false
                 \\target_os="mac"
                 \\host_os="mac"
+                \\use_custom_libcxx=false
                 \\cc_wrapper="ccache"
             ;
             if (options.toolchain) |chain| {

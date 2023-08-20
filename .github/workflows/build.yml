@@ -9,6 +9,10 @@ on:
     branches:
     - 'main'
   
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_macos:
     name: 'macos'
@@ -26,6 +30,7 @@ jobs:
         max-size: 10G
         key: ${{ github.job }}-macos
         append-timestamp: false
+        save: ${{ github.ref == 'main' && 'true' || 'false'}}
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -39,7 +44,7 @@ jobs:
         export PATH=$PATH:$PWD/tools
     - name: setup modules
       run: |
-        cp tools/Setup.local deps/cpython/Modules
+        cp tools/mac.Setup.local deps/cpython/Modules/Setup.local
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
     - name: check
@@ -54,6 +59,47 @@ jobs:
     - name: build mrt
       run: |
         zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: tarball
+      run: |
+        bash tools/build.tgz.sh
+
+  build_linux:
+    name: 'linux'
+    runs-on: linux-ubuntu
+    timeout-minutes: 120
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.11.0
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        max-size: 10G
+        key: ${{ github.job }}-linux
+        append-timestamp: false
+    - name: ccache
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+    - name: install system dependencies
+      run: |
+        bash tools/linux.install.deps.sh
+    - name: setup modules
+      run: |
+        cp tools/linux.Setup.local deps/cpython/Modules/Setup.local
+    - name: fetch v8 dependencies
+      run: cd deps && bash ../tools/fetch.v8.deps.sh
+    - name: build py
+      run: zig build -Doptimize=ReleaseFast -Dpy=true 
+    - name: build js
+      run: |
+        sudo apt install -y pkg-config libglib2.0-dev
+        sed -i "s/\"-Wl,--disable-new-dtags\",//" deps/v8/build/config/gcc/BUILD.gn
+        sed -i "s/\"atomic\"//" deps/v8/build/config/linux/BUILD.gn
+        zig build -Doptimize=ReleaseFast -Djs=true
+    - name: build mrt
+      run: zig build -Doptimize=ReleaseSmall -Dmrt=true
     - name: tarball
       run: |
         bash tools/build.tgz.sh
