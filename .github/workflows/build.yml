@@ -31,6 +31,8 @@ jobs:
         key: ${{ github.job }}-macos
         append-timestamp: false
         save: ${{ github.ref == 'ref/heads/main' && 'true' || 'false'}}
+    - name: reftest
+      run: echo ${{ github.ref }}
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
