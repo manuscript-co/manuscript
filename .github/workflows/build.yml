@@ -30,9 +30,7 @@ jobs:
         max-size: 10G
         key: ${{ github.job }}-macos
         append-timestamp: false
-        save: ${{ github.ref == 'ref/heads/main' && 'true' || 'false'}}
-    - name: reftest
-      run: echo ${{ github.ref }}
+        save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -81,6 +79,7 @@ jobs:
         max-size: 10G
         key: ${{ github.job }}-linux
         append-timestamp: false
+        save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
