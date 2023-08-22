@@ -14,6 +14,9 @@ jobs:
     runs-on: macos-13
     timeout-minutes: 120
     steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
     - uses: ./.github/actions/build-macos
     - name: test mrt
       run: zig build test -Doptimize=ReleaseSmall 
