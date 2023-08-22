@@ -1,4 +1,4 @@
-name: build package
+name: build, test, package
 
 on:
   workflow_dispatch:
@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   build_macos:
+    name: 'macos'
     runs-on: macos-13
     timeout-minutes: 120
     steps:
@@ -64,6 +65,7 @@ jobs:
       run: bash tools/build.tgz.sh
 
   build_linux:
+    name: 'linux'
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
