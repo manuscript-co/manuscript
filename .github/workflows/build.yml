@@ -100,6 +100,8 @@ jobs:
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: run tests
+      run: zig build test
     - name: tarball
       run: |
         bash tools/build.tgz.sh
