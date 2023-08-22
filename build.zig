@@ -257,18 +257,17 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
         .macos => {
             const mac =
                 \\treat_warnings_as_errors=false
+                \\fatal_linker_warnings=false
                 \\use_lld=false
                 \\use_gold=false
                 \\target_os="mac"
                 \\host_os="mac"
                 \\use_custom_libcxx=false
                 \\cc_wrapper="ccache"
+                \\use_sysroot=false
+                \\custom_toolchain="//:main_zig_toolchain"
+                \\clang_base_path=".."
             ;
-            if (options.toolchain) |chain| {
-                try gnargs.append(b.fmt("clang_base_path=\"{s}\"", .{chain}));
-            } else {
-                try gnargs.append(b.fmt("clang_base_path=\"/usr\"", .{}));
-            }
             try gnargs.append(mac);
         },
         else => unreachable

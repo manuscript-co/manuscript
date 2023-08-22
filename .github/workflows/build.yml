@@ -46,17 +46,13 @@ jobs:
       run: |
         cp tools/mac.Setup.local deps/cpython/Modules/Setup.local
     - name: fetch v8 dependencies
+      run: cd deps && bash ../tools/fetch.v8.deps.sh
+    - name: build py
+      run: zig build -Doptimize=ReleaseFast -Dpy=true 
+    - name: build js
       run: |
-        cd deps && bash ../tools/fetch.v8.deps.sh
-    - name: check
-      run: |
-        /usr/bin/clang -v
-        brew --prefix llvm@15
-    - name: build deps
-      run: |
-        zig build -Doptimize=ReleaseFast \
-          -Djs=true -Dpy=true \
-          -Dv8-toolchain=$(brew --prefix llvm@15)
+        sed -i'orig' 's/"-Wl,-ObjC"//' deps/v8/build/config/mac/BUILD.gn
+        zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
     - name: run tests
