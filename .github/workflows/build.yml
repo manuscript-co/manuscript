@@ -48,7 +48,7 @@ jobs:
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
     - name: build py
-      run: zig build -Doptimize=ReleaseFast -Dpy=true 
+      run: zig build -Doptimize=ReleaseFast -Dpy=true -DCC="ccache cc"
     - name: build js
       run: |
         sed -i'orig' 's/"-Wl,-ObjC"//' deps/v8/build/config/mac/BUILD.gn
@@ -62,7 +62,7 @@ jobs:
 
   build_linux:
     name: 'linux'
-    runs-on: ubuntu-22.04
+    runs-on: linux-ubuntu
     timeout-minutes: 120
     steps:
     - uses: actions/checkout@v3
@@ -89,7 +89,7 @@ jobs:
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
     - name: build py
-      run: zig build -Doptimize=ReleaseFast -Dpy=true 
+      run: zig build -Doptimize=ReleaseFast -Dpy=true -DCC="ccache gcc" 
     - name: build js
       run: |
         sudo apt install -y pkg-config libglib2.0-dev
