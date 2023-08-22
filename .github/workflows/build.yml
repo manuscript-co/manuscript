@@ -1,4 +1,4 @@
-name: build package
+name: build, test, package
 
 on:
   workflow_dispatch:
@@ -54,11 +54,11 @@ jobs:
         sed -i'orig' 's/"-Wl,-ObjC"//' deps/v8/build/config/mac/BUILD.gn
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
-      run: |
-        zig build -Doptimize=ReleaseSmall -Dmrt=true
+      run: zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: run tests
+      run: zig build test -Doptimize=ReleaseSmall
     - name: tarball
-      run: |
-        bash tools/build.tgz.sh
+      run: bash tools/build.tgz.sh
 
   build_linux:
     name: 'linux'
@@ -98,6 +98,8 @@ jobs:
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: run tests
+      run: zig build test -Doptimize=ReleaseSmall
     - name: tarball
       run: |
         bash tools/build.tgz.sh

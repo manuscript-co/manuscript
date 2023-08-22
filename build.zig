@@ -34,6 +34,20 @@ pub fn build(b: *Builder) !void {
         const mrt = try makeMrt(b, options);
         b.installArtifact(mrt);
     }
+    try setupTests(b, options);
+}
+
+fn setupTests(b: *Builder, options: StagePrepOptions) !void {
+    const t = b.step("test", "");
+    const mt = b.addTest(.{
+        .root_source_file = std.build.FileSource.relative(
+            try join(b.allocator, &.{"src", "mrt.zig"})),
+        .target = options.target, 
+        .optimize = options.optimize 
+    });
+    try prepCompileStep(b, options, mt);
+    const run_unit_tests = b.addRunArtifact(mt);
+    t.dependOn(&run_unit_tests.step);
 }
 
 const StagePrepOptions = struct {
@@ -45,7 +59,6 @@ const StagePrepOptions = struct {
 };
 
 fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
-    const staging = try join(b.allocator, &.{"zig-out", "staging"});
     const mrt = b.addExecutable(.{ 
         .name = "mrt", 
         .root_source_file = std.build.FileSource.relative(
@@ -53,7 +66,16 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
         .target = options.target, 
         .optimize = options.optimize 
     });
+    try prepCompileStep(b, options, mrt);
+    return mrt;
+}
 
+fn prepCompileStep(
+    b: *Builder, 
+    options: StagePrepOptions, 
+    mrt: *std.build.Step.Compile
+) !void {
+    const staging = try join(b.allocator, &.{"zig-out", "staging"});
     // python
     try addCpython(b, options, mrt);
     mrt.addIncludePath(try lp(b, &.{
@@ -72,7 +94,6 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
     mrt.linkLibCpp();
-    return mrt;
 }
 
 fn addCpython(
@@ -81,19 +102,6 @@ fn addCpython(
     mrt: *std.Build.Step.Compile
 ) !void {
     const pyout = try join(b.allocator, &.{"zig-out", "staging", "cpython"});
-    const cf = try rp(b, &.{
-        pyout, "bin", "python3.12-config"
-    });
-    var cp = std.ChildProcess.init(&.{
-        cf,
-        "--embed",
-        "--ldflags"
-    }, b.allocator);
-    _ = try cp.spawnAndWait();
-    if (cp.stdout) |out| {
-        const f = try out.readToEndAlloc(b.allocator, 0);
-        std.log.debug("{s}", .{f});
-    }
 
     const pcd = try join(b.allocator, &.{ pyout, "lib", "python3.12" });
     const pcp = if (options.optimize == .Debug) "config-3.12d" else "config-3.12";
