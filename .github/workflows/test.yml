@@ -1,0 +1,19 @@
+name: test package
+
+on:
+  workflow_dispatch:
+  push:
+      branches:
+      - 'main'
+  pull_request:
+      branches:
+      - 'main'
+
+jobs:
+  test_macos:
+    runs-on: macos-13
+    timeout-minutes: 120
+    steps:
+    - uses: ./.github/actions/build-macos
+    - name: test mrt
+      run: zig build test -Doptimize=ReleaseSmall 

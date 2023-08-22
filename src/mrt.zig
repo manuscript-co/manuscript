@@ -77,9 +77,9 @@ fn runV8on101(file: [:0]const u8) !void {
 
 const mrterror = error{ NonZeroReturnCode, PythonException };
 
-test "versions" {
+test {
     const pv = p.Py_GetVersion();
-    std.debug.assert(std.mem.startsWith(u8, pv, "3.12"));
+    try std.testing.expect(std.mem.startsWith(u8, std.mem.span(pv), "3.12"));
     const jv = j.v8_version();
-    std.debug.assert(std.mem.eql(u8, jv, "11.7.99"));
+    try std.testing.expectEqualStrings(std.mem.span(jv), "11.5.0 (candidate)");
 }

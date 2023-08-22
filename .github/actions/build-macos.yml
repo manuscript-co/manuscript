@@ -1,0 +1,41 @@
+
+runs:
+  using: "composite"
+  steps: 
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    - uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.11.0
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        max-size: 10G
+        key: ${{ github.job }}-macos
+        append-timestamp: false
+        save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
+    - name: ccache
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+    - name: install system dependencies
+      run: |
+        bash tools/mac.install.brew.deps.sh
+        pip install Jinja2==3.1.2
+    - name: install gn
+      run: |
+        tar xf deps/gn/gn-mac-amd64.zip -C tools/
+        export PATH=$PATH:$PWD/tools
+    - name: setup modules
+      run: |
+        cp tools/mac.Setup.local deps/cpython/Modules/Setup.local
+    - name: fetch v8 dependencies
+      run: cd deps && bash ../tools/fetch.v8.deps.sh
+    - name: check
+      run: |
+        /usr/bin/clang -v
+        brew --prefix llvm@15
+    - name: build deps
+      run: |
+        zig build -Doptimize=ReleaseFast \
+          -Djs=true -Dpy=true \
+          -Dv8-toolchain=$(brew --prefix llvm@15)
