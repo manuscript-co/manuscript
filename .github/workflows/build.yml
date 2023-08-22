@@ -51,7 +51,7 @@ jobs:
       run: zig build -Doptimize=ReleaseFast -Dpy=true 
     - name: build js
       run: |
-        sed -i "s/\"-Wl,-ObjC\"//" deps/v8/build/config/mac/BUILD.gn
+        sed -i'orig' 's/"-Wl,-ObjC"//' deps/v8/build/config/mac/BUILD.gn
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: |
