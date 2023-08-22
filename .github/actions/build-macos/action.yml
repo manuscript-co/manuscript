@@ -12,26 +12,33 @@ runs:
         append-timestamp: false
         save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
+      shell: bash
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
     - name: install system dependencies
+      shell: bash
       run: |
         bash tools/mac.install.brew.deps.sh
         pip install Jinja2==3.1.2
     - name: install gn
+      shell: bash
       run: |
         tar xf deps/gn/gn-mac-amd64.zip -C tools/
         export PATH=$PATH:$PWD/tools
     - name: setup modules
+      shell: bash
       run: |
         cp tools/mac.Setup.local deps/cpython/Modules/Setup.local
     - name: fetch v8 dependencies
+      shell: bash
       run: cd deps && bash ../tools/fetch.v8.deps.sh
     - name: check
+      shell: bash
       run: |
         /usr/bin/clang -v
         brew --prefix llvm@15
     - name: build deps
+      shell: bash
       run: |
         zig build -Doptimize=ReleaseFast \
           -Djs=true -Dpy=true \
