@@ -2,9 +2,6 @@
 runs:
   using: "composite"
   steps: 
-    - uses: actions/checkout@v3
-      with:
-        submodules: true
     - uses: goto-bus-stop/setup-zig@v2
       with:
         version: 0.11.0
