@@ -1,4 +1,4 @@
-name: build package
+name: build, test, package
 
 on:
   workflow_dispatch:
@@ -46,7 +46,8 @@ jobs:
       run: |
         cp tools/mac.Setup.local deps/cpython/Modules/Setup.local
     - name: fetch v8 dependencies
-      run: cd deps && bash ../tools/fetch.v8.deps.sh
+      run: |
+        cd deps && bash ../tools/fetch.v8.deps.sh
     - name: check
       run: |
         /usr/bin/clang -v
@@ -57,11 +58,11 @@ jobs:
           -Djs=true -Dpy=true \
           -Dv8-toolchain=$(brew --prefix llvm@15)
     - name: build mrt
-      run: |
-        zig build -Doptimize=ReleaseSmall -Dmrt=true
+      run: zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: run tests
+      run: zig build test -Doptimize=ReleaseSmall
     - name: tarball
-      run: |
-        bash tools/build.tgz.sh
+      run: bash tools/build.tgz.sh
 
   build_linux:
     name: 'linux'
@@ -101,6 +102,8 @@ jobs:
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
+    - name: run tests
+      run: zig build test -Doptimize=ReleaseSmall
     - name: tarball
       run: |
         bash tools/build.tgz.sh
