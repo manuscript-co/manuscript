@@ -60,7 +60,7 @@ jobs:
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
     - name: run tests
-      run: zig build test
+      run: zig build test -Doptimize=ReleaseSmall
     - name: tarball
       run: bash tools/build.tgz.sh
 
@@ -103,7 +103,7 @@ jobs:
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
     - name: run tests
-      run: zig build test
+      run: zig build test -Doptimize=ReleaseSmall
     - name: tarball
       run: |
         bash tools/build.tgz.sh
