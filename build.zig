@@ -258,6 +258,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
                 \\cc_wrapper="ccache"
                 \\use_sysroot=false
                 \\custom_toolchain="//:main_zig_toolchain"
+                \\clang_base_path=".."
             ;
             try gnargs.append(mac);
         },
