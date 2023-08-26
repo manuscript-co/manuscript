@@ -19,6 +19,7 @@ pub fn build(b: *Builder) !void {
 
     const js = b.option(bool, "js", "build only v8");
     if (safeUnwrap(js)) {
+        try copy101(b);
         const v8 = try makeV8(b, options);
         b.getInstallStep().dependOn(v8);
     }
@@ -266,7 +267,7 @@ fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
                 \\cc_wrapper="ccache"
                 \\use_sysroot=false
                 \\custom_toolchain="//:main_zig_toolchain"
-                \\clang_base_path=".."
+                \\is_clang=false
             ;
             try gnargs.append(mac);
         },
@@ -323,4 +324,26 @@ inline fn safeUnwrap(v: ?bool) bool {
         if (vu) return true;
     }
     return false;
+}
+
+fn copy101(b: *Builder) !void {
+    std.fs.makeDirAbsolute(try rp(b, &.{"deps", "v8", "101"})) 
+    catch |err| switch (err) {
+        error.PathAlreadyExists => {},
+        else => return err
+    };
+
+    const paths = [_][]const u8{
+        "101.h",
+        "101.cpp"
+    };
+    const src = try rp(b, &.{"src", "101"});
+    const dst = try rp(b, &.{"deps", "v8", "101"});
+
+    for (paths) |p| {
+        try std.fs.copyFileAbsolute(
+            try rp(b, &.{src, p}), 
+            try rp(b, &.{dst, p}), .{}
+        );
+    }
 }

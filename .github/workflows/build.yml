@@ -52,6 +52,9 @@ jobs:
     - name: build js
       run: |
         sed -i'orig' 's/"-Wl,-ObjC"//' deps/v8/build/config/mac/BUILD.gn
+        sed -i'orig' 's/-Wno-maybe-uninitialized/-Wno-uninitialized/' deps/v8/build/config/compiler/BUILD.gn
+        sed -i'orig' 's/-Wno-packed-not-aligned/-Wno-packed-non-pod/' deps/v8/build/config/compiler/BUILD.gn
+        sed -i'orig' 's/-Wno-class-memaccess/-Wno-class-varargs/' deps/v8/build/config/compiler/BUILD.gn
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
