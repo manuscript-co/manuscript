@@ -33,8 +33,27 @@ pub fn build(b: *Builder) !void {
     if (safeUnwrap(bmrt)) {
         const mrt = try makeMrt(b, options);
         b.installArtifact(mrt);
+        try setupIntTests(b, options, mrt);
     }
     try setupTests(b, options);
+}
+
+fn setupIntTests(b: *Builder, _: StagePrepOptions, mrt: *std.build.Step.Compile) !void {
+    const step = b.step("int-test", "");
+    const tests = [_][]const u8{
+        b.dupePath("tests/js/index.js"),
+        b.dupePath("tests/py/index.py"),
+        // TODO
+        // b.dupePath("tests/ts/index.ts"),
+        // b.dupePath("tests/cjs/index.cjs"),
+        // b.dupePath("tests/mjs/index.mjs"),
+    };
+    
+    for (tests) |t| {
+        const rt = b.addRunArtifact(mrt);
+        rt.addArg(t);
+        step.dependOn(&rt.step);
+    }
 }
 
 fn setupTests(b: *Builder, options: StagePrepOptions) !void {
@@ -65,7 +84,7 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
             try join(b.allocator, &.{"src", "mrt.zig"})), 
         .target = options.target, 
         .optimize = options.optimize 
-    });
+    });    
     try prepCompileStep(b, options, mrt);
     return mrt;
 }
