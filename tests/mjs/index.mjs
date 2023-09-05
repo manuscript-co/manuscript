@@ -1,3 +1,5 @@
+import { sum } from "../module.mjs";
+
 function jitMe(y){
     arr[y] += obj.sum;
     obj.sum += y
@@ -10,3 +12,4 @@ for(let y = 0; y < 1000; y++){
     jitMe(y)
 }
 42
+sum(0, 1)
