@@ -68,7 +68,7 @@ jobs:
 
   build_linux:
     name: 'linux'
-    runs-on: linux-ubuntu
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
     - uses: actions/checkout@v3
