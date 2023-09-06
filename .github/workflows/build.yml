@@ -29,7 +29,7 @@ jobs:
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
         max-size: 10G
-        key: ${{ github.job }}-macos
+        key: ${{ runner.os }}
         append-timestamp: false
         save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
@@ -68,7 +68,7 @@ jobs:
 
   build_linux:
     name: 'linux'
-    runs-on: ubuntu-22.04
+    runs-on: linux-ubuntu
     timeout-minutes: 120
     steps:
     - uses: actions/checkout@v3
@@ -81,7 +81,7 @@ jobs:
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
         max-size: 10G
-        key: ${{ github.job }}-linux
+        key: ${{ runner.os }}
         append-timestamp: false
         save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
