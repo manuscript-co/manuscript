@@ -48,6 +48,13 @@ jobs:
         cp tools/mac.Setup.local deps/cpython/Modules/Setup.local
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: src/seed/package-lock.json
+    - name: install js modules
+      run: cd src/seed && npm ci
     - name: build py
       run: zig build -Doptimize=ReleaseFast -Dpy=true -DCC="ccache cc"
     - name: build js
@@ -95,6 +102,13 @@ jobs:
         cp tools/linux.Setup.local deps/cpython/Modules/Setup.local
     - name: fetch v8 dependencies
       run: cd deps && bash ../tools/fetch.v8.deps.sh
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: src/seed/package-lock.json
+    - name: install js modules
+      run: cd src/seed && npm ci
     - name: build py
       run: zig build -Doptimize=ReleaseFast -Dpy=true -DCC="ccache gcc" 
     - name: build js
