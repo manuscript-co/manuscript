@@ -60,9 +60,6 @@ jobs:
     - name: build js
       run: |
         sed -i'orig' 's/"-Wl,-ObjC"//' deps/v8/build/config/mac/BUILD.gn
-        sed -i'orig' 's/-Wno-maybe-uninitialized/-Wno-uninitialized/' deps/v8/build/config/compiler/BUILD.gn
-        sed -i'orig' 's/-Wno-packed-not-aligned/-Wno-packed-non-pod/' deps/v8/build/config/compiler/BUILD.gn
-        sed -i'orig' 's/-Wno-class-memaccess/-Wno-class-varargs/' deps/v8/build/config/compiler/BUILD.gn
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
@@ -116,9 +113,6 @@ jobs:
         sudo apt install -y pkg-config libglib2.0-dev
         sed -i "s/\"-Wl,--disable-new-dtags\",//" deps/v8/build/config/gcc/BUILD.gn
         sed -i "s/\"atomic\"//" deps/v8/build/config/linux/BUILD.gn
-        sed -i 's/-Wno-maybe-uninitialized/-Wno-uninitialized/' deps/v8/build/config/compiler/BUILD.gn
-        sed -i 's/-Wno-packed-not-aligned/-Wno-packed-non-pod/' deps/v8/build/config/compiler/BUILD.gn
-        sed -i 's/-Wno-class-memaccess/-Wno-class-varargs/' deps/v8/build/config/compiler/BUILD.gn
         zig build -Doptimize=ReleaseFast -Djs=true
     - name: build mrt
       run: zig build -Doptimize=ReleaseSmall -Dmrt=true
