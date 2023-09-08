@@ -21,7 +21,7 @@ class Flags {
 };
 
 const args = Flags.parse();
-const result = await esbuild.build({
+await esbuild.build({
   entryPoints: ['seed.ts'],
   bundle: true,
   minify: args.isRelease,
