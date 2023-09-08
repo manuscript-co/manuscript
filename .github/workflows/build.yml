@@ -34,6 +34,7 @@ jobs:
         save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
       run: |
+        export CCACHE_DEBUG=1
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
     - name: install system dependencies
       run: |
@@ -83,6 +84,7 @@ jobs:
         save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
       run: |
+        export CCACHE_DEBUG=1
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
     - name: install system dependencies
       run: |
