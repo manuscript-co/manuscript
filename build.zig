@@ -33,10 +33,22 @@ pub fn build(b: *Builder) !void {
     const bmrt = b.option(bool, "mrt", "build only mrt");
     if (safeUnwrap(bmrt)) {
         const mrt = try makeMrt(b, options);
+        const seed = try makeSeed(b, options);
+        mrt.step.dependOn(seed);
         b.installArtifact(mrt);
         try setupIntTests(b, options, mrt);
     }
     try setupTests(b, options);
+}
+
+fn makeSeed(b: *Builder, options: StagePrepOptions) !*std.Build.Step {
+    const seed = b.addSystemCommand(&.{"node"});
+    const outDir = b.getInstallPath(.prefix, b.dupePath("staging/seed"));
+    seed.addFileArg(try lp(b, &.{"src", "seed", "build.js"}));
+    if (options.optimize != .Debug) seed.addArg("-Doptimize=Release");
+    seed.addArg(b.fmt("-DoutDir={s}", .{outDir}));
+    seed.cwd = b.dupePath("src/seed");
+    return &seed.step;
 }
 
 fn setupIntTests(b: *Builder, _: StagePrepOptions, mrt: *std.build.Step.Compile) !void {
@@ -110,7 +122,7 @@ fn prepCompileStep(
     }));
 
     // javascript
-    mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
+    mrt.addIncludePath(try lp(b, &.{ "src", "101" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
     mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
     mrt.linkLibCpp();
