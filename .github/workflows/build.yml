@@ -63,7 +63,9 @@ jobs:
       run: zig build int-test -Dmrt=true -Doptimize=ReleaseSmall
     - name: tarball
       run: bash tools/build.tgz.sh
-
+    - name: ccache stats
+      run: ccache -s
+      
   build_linux:
     name: 'linux'
     runs-on: ubuntu-22.04
@@ -111,3 +113,5 @@ jobs:
     - name: tarball
       run: |
         bash tools/build.tgz.sh
+    - name: ccache stats
+      run: ccache -s
