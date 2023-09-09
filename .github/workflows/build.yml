@@ -73,7 +73,6 @@ jobs:
     - uses: goto-bus-stop/setup-zig@v2
       with:
         version: 0.11.0
-        cache: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
         max-size: 10G
