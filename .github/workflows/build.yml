@@ -30,10 +30,9 @@ jobs:
         max-size: 10G
         key: ${{ runner.os }}
         append-timestamp: false
-        save: true
+        save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
       run: |
-        export CCACHE_DEBUG=1
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
     - name: install system dependencies
       run: |
@@ -62,9 +61,7 @@ jobs:
       run: zig build int-test -Dmrt=true -Doptimize=ReleaseSmall
     - name: tarball
       run: bash tools/build.tgz.sh
-    - name: ccache stats
-      run: ccache -s -v
-      
+
   build_linux:
     name: 'linux'
     runs-on: ubuntu-22.04
@@ -76,6 +73,7 @@ jobs:
     - uses: goto-bus-stop/setup-zig@v2
       with:
         version: 0.11.0
+        cache: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
         max-size: 10G
@@ -84,7 +82,6 @@ jobs:
         save: ${{ github.ref == 'refs/heads/main' && 'true' || 'false'}}
     - name: ccache
       run: |
-        export CCACHE_DEBUG=1
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
     - name: install system dependencies
       run: |
@@ -111,5 +108,3 @@ jobs:
     - name: tarball
       run: |
         bash tools/build.tgz.sh
-    - name: ccache stats
-      run: ccache -s -v
