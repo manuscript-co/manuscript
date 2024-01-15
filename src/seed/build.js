@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild'
 
-class Flags {
+class /*fun with*/ Flags {
   constructor() {
     this.optimize = 'Debug';
     this.outDir = 'build';
@@ -25,6 +25,8 @@ await esbuild.build({
   entryPoints: ['seed.ts'],
   bundle: true,
   minify: args.isRelease,
-  sourcemap: !args.isRelease,
-  outdir: args.outDir
+  sourcemap: args.isRelease ? false : 'linked',
+  outdir: args.outDir,
+  external: ['./jrt'],
+  jsxDev: false,
 });

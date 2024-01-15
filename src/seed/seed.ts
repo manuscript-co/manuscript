@@ -1,5 +1,9 @@
 import {transform} from "sucrase";
-const code = getCode();
-const compiledCode = transform(
-        code, {transforms: ["typescript", "imports"]}
-    ).code;
+import { getCode } from "./jrt";
+
+const code = '1+1'; //getCode();
+const tcode = transform(
+    code, {transforms: ["typescript", "imports"]}
+).code;
+
+new Function(tcode).call(this);

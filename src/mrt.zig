@@ -2,6 +2,7 @@ const std = @import("std");
 const deps = @import("deps.zig");
 const p = deps.p;
 const j = deps.j;
+const seed = deps.seed;
 const VERSION = "0.0.1";
 
 pub fn main() !void {
@@ -72,7 +73,7 @@ fn runV8on101(file: [:0]const u8) !void {
     const buf = try std.heap.c_allocator.alloc(u8, stats.size);
     defer std.heap.c_allocator.free(buf);
     _ = try std.fs.File.readAll(fd, buf);
-    j.exec_file(buf.ptr);
+    j.exec_file(seed.ptr);
 }
 
 const mrterror = error{ NonZeroReturnCode, PythonException };

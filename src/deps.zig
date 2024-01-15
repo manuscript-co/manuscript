@@ -6,3 +6,6 @@ pub const p = @cImport({
 pub const j = @cImport({
     @cInclude("101.h");
 });
+
+const dupePath = @import("bof.zig").dupePath;
+pub var seed = @embedFile("./seed/build/seed.js");
