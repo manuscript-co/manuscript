@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "esbuild": "0.19.2",
+    "sucrase": "3.34.0"
+  }
+}

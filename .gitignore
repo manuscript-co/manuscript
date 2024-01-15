@@ -5,6 +5,9 @@ zig-cache/
 zig-out/
 staging/
 build/
+**/node_modules/*
+**/build/*
 tools/gn
 .ccls
 .ccls-cache
+*.out
