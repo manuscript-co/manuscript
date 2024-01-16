@@ -1,0 +1,6 @@
+[submodule "deps/ggml"]
+	path = deps/ggml
+	url = https://github.com/ggerganov/ggml.git
+[submodule "deps/quickjs"]
+	path = deps/quickjs
+	url = https://github.com/manuscript-co/quickjs.git
