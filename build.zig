@@ -95,7 +95,7 @@ fn setupTests(b: *Builder, options: StagePrepOptions) !void {
         .target = options.target, 
         .optimize = options.optimize 
     });
-    try oldPrepCompileStep(b, options, mt);
+    try prepCompileStep(b, options, mt);
     const run_unit_tests = b.addRunArtifact(mt);
     t.dependOn(&run_unit_tests.step);
 }
