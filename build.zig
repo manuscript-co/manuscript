@@ -17,26 +17,56 @@ pub fn build(b: *Builder) !void {
         .CC = CC, .CXX = CXX 
     };
 
-    const js = b.option(bool, "js", "build only v8");
-    if (safeUnwrap(js)) {
-        try copy101(b);
-        const v8 = try makeV8(b, options);
-        b.getInstallStep().dependOn(v8);
+    const bqjs = b.option(bool, "js", "build only qjs");
+    if (safeUnwrap(bqjs)) {
+        const qjs = try makeQjs(b, options);
+        b.getInstallStep().dependOn(qjs);
     }
 
-    const bpy = b.option(bool, "py", "build only python");
-    if (safeUnwrap(bpy)) {
-        const py = try makePy(b, options);
-        b.getInstallStep().dependOn(py);
+    const bggml = b.option(bool, "ggml", "build only ggml");
+    if (safeUnwrap(bggml)) {
+        const ggml = try makeggml(b, options);
+        b.getInstallStep().dependOn(ggml);
     } 
+
+    if (safeUnwrap(bggml) or safeUnwrap(bqjs)) return;
     
-    const bmrt = b.option(bool, "mrt", "build only mrt");
-    if (safeUnwrap(bmrt)) {
-        const mrt = try makeMrt(b, options);
-        b.installArtifact(mrt);
-        try setupIntTests(b, options, mrt);
-    }
+    const mrt = try makeMrt(b, options);
+    b.getInstallStep().dependOn(&mrt.step);
+    b.installArtifact(mrt);
+    try setupIntTests(b, options, mrt);
     try setupTests(b, options);
+}
+
+fn makeggml(b: *Builder, _: StagePrepOptions) !*std.build.Step {
+    const stagingDir = b.pathFromRoot("build");
+    const mk = b.addSystemCommand(&.{ "cmake", 
+        b.fmt("-DCMAKE_INSTALL_PREFIX={s}", .{stagingDir}),
+        "-DGGML_BUILD_TESTS=OFF",
+        "-DGGML_BUILD_EXAMPLES=OFF",
+        "-DBUILD_SHARED_LIBS=OFF",
+        "-B", "build"
+    });
+    mk.cwd = b.dupePath("deps/ggml");
+    const mkinstall = b.addSystemCommand(&.{ "make", "install" });
+    mkinstall.cwd = b.dupePath("deps/ggml/build");
+    mkinstall.step.dependOn(&mk.step);
+    return &mkinstall.step;
+}
+
+fn makeQjs(b: *Builder, _: StagePrepOptions) !*std.build.Step {
+    const stagingDir = b.pathFromRoot("build");
+    const mk = b.addSystemCommand(&.{ "make", "-j4", "-s" });
+    mk.cwd = b.dupePath("deps/quickjs");
+    const mkinstall = b.addSystemCommand(&.{ "make", "install" });
+    mkinstall.setEnvironmentVariable("DESTDIR", stagingDir);
+    mkinstall.setEnvironmentVariable("PREFIX", "");
+    mkinstall.cwd = mk.cwd;
+    mkinstall.step.dependOn(&mk.step);
+    const mkclean = b.addSystemCommand(&.{ "make", "clean" });
+    mkclean.cwd = mk.cwd;
+    mkclean.step.dependOn(&mkinstall.step);
+    return &mkclean.step;
 }
 
 fn setupIntTests(b: *Builder, _: StagePrepOptions, mrt: *std.build.Step.Compile) !void {
@@ -92,250 +122,21 @@ fn makeMrt(b: *Builder, options: StagePrepOptions) !*std.build.Step.Compile {
 
 fn prepCompileStep(
     b: *Builder, 
-    options: StagePrepOptions, 
+    opts: StagePrepOptions, 
     mrt: *std.build.Step.Compile
 ) !void {
-    const staging = try join(b.allocator, &.{"zig-out", "staging"});
-    // python
-    try addCpython(b, options, mrt);
-    mrt.addIncludePath(try lp(b, &.{
-        staging, "cpython", "include", 
-        if (options.optimize == .Debug) "python3.12d" else "python3.12"
-    })); 
-    mrt.addAssemblyFile(try lp(b, &.{
-        "deps", "cpython", "Modules", "_decimal", "libmpdec", "libmpdec.a"
-    }));
-    mrt.addAssemblyFile(try lp(b, &.{
-        "deps", "cpython", "Modules", "_hacl", "libHacl_Hash_SHA2.a"
-    }));
-
-    // javascript
-    mrt.addIncludePath(try lp(b, &.{ "deps", "v8", "101" }));
-    mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "lib101.a" }));
-    mrt.addAssemblyFile(try lp(b, &.{ staging, "v8", "obj", "libv8_monolith.a" }));
-    mrt.linkLibCpp();
-}
-
-fn addCpython(
-    b: *Builder, 
-    options: StagePrepOptions,
-    mrt: *std.Build.Step.Compile
-) !void {
-    const pyout = try join(b.allocator, &.{"zig-out", "staging", "cpython"});
-
-    const pcd = try join(b.allocator, &.{ pyout, "lib", "python3.12" });
-    const pcp = if (options.optimize == .Debug) "config-3.12d" else "config-3.12";
-
-    const platform = switch(options.target.getOsTag()) {
-        .macos => "darwin",
-        .linux => switch (options.target.getCpuArch()) {
-            .arm, .aarch64 => "aarch64-linux-gnu",
-            .x86_64 => "x86_64-linux-gnu",
-            else => unreachable
-        },
-        else => unreachable
-    };
-
-    mrt.addLibraryPath(try lp(b, &.{
-        pcd, try std.mem.join(b.allocator, "-", &.{pcp, platform})
-    }));
-
-    mrt.linkSystemLibrary(
-        if (options.optimize == .Debug) "python3.12d"
-        else "python3.12"
-    );
-
-    mrt.linkSystemLibrary("dl");
-    mrt.linkSystemLibrary("z");
-
-    if (options.target.getOsTag() == .macos) {
-        mrt.linkFramework("SystemConfiguration");
-        mrt.linkFramework("CoreFoundation");
+    const ip = std.build.FileSource.relative(".");
+    mrt.addIncludePath(ip);
+    const libp = std.build.FileSource.relative(b.dupePath("build/lib"));
+    mrt.addLibraryPath(libp);
+    const qjspath = std.build.FileSource.relative(b.dupePath("build/lib/quickjs"));
+    mrt.addLibraryPath(qjspath);
+    mrt.linkLibC();
+    mrt.linkSystemLibrary("ggml");
+    mrt.linkSystemLibrary("quickjs");
+    if (opts.target.getOsTag() == .macos) {
+        mrt.linkFramework("Accelerate");
     }
-
-    if (options.target.getOsTag() == .linux) {
-        mrt.linkSystemLibrary("m");
-    }  
-}
-
-fn escapeDouble(b: *Builder, s: []const u8) ![]const u8 {
-    const out = try b.allocator.alloc(u8, std.mem.replacementSize(u8, s, "\"", "\\\""));
-    _ = std.mem.replace(u8, s, "\"", "\\\"", out);
-    return out;
-}
-
-fn makePy(
-    b: *Builder, 
-    options: StagePrepOptions
-) !*std.build.Step {
-    const stagingDir = b.getInstallPath(.prefix, "staging");
-    const pyout = try rp(b, &.{ stagingDir, "cpython" });
-    const pysrc = try rp(b, &.{ "deps", "cpython" });
-    std.log.debug("pyout {s}", .{pyout});
-    const cf = b.addSystemCommand(&.{ 
-        "./configure", 
-        "--disable-test-modules", 
-        "--disable-shared",
-        "--with-static-libpython",
-        b.fmt("--prefix={s}", .{pyout}),
-        "ac_cv_lib_intl_textdomain=no",
-        "ac_cv_header_libintl_h=no"
-    });
-
-    if (options.optimize != .Debug) {
-        cf.addArg("-q");
-        cf.addArg("--config-cache");
-    }
-    if (options.optimize == .Debug) cf.addArg("--with-pydebug"); 
-    if (options.CC) |CC| cf.setEnvironmentVariable("CC", CC);
-    if (options.CXX) |CXX| cf.setEnvironmentVariable("CXX", CXX);
-    cf.cwd = pysrc;
-
-    const mk = b.addSystemCommand(&.{ "make", "-j4", "-s" });
-    mk.cwd = pysrc;
-    mk.step.dependOn(&cf.step);
-    
-    const mkinstall = b.addSystemCommand(&.{ "make", "install" });
-    mkinstall.cwd = pysrc;
-    mkinstall.step.dependOn(&mk.step);
-    return &mkinstall.step;
-}
-
-fn makeV8(
-    b: *Builder, 
-    options: StagePrepOptions
-) !*std.build.Step {
-    const stagingDir = b.getInstallPath(.prefix, "staging");
-    const v8src = try rp(b, &.{"deps", "v8"});
-    const v8out = try rp(b, &.{stagingDir, "v8"});
-
-    const gnbin = if (options.target.getOsTag() == .macos) try rp(b, &.{"tools", "gn"}) else "gn";
-    
-    const gngen = b.addSystemCommand(&.{
-        gnbin, "gen",
-        v8out,
-        b.fmt("--args={s}", .{ try getGnArgs(b, options) }),
-    });
-    gngen.cwd = v8src;
-
-    const ninja = b.addSystemCommand(&.{
-        "ninja", "-j4", "v8_monolith", "101"
-    });
-    if (options.target.getOsTag() == .macos) {
-        ninja.addArg("--quiet");
-    }
-    ninja.cwd = v8out;
-    ninja.step.dependOn(&gngen.step);
-    return &ninja.step;
-}
-
-fn getGnArgs(b: *Builder, options: StagePrepOptions) ![]const u8 {
-    var gnargs = std.ArrayList([]const u8).init(b.allocator);
-    defer gnargs.deinit();
-
-    const basegn =
-        \\is_component_build=false
-        \\v8_monolithic=true
-        \\v8_use_external_startup_data=false
-        \\v8_generate_external_defines_header=true
-        \\v8_enable_31bit_smis_on_64bit_arch=true
-
-        \\use_goma=false
-        \\v8_enable_fast_mksnapshot=true    
-        \\v8_enable_snapshot_compression=true
-        \\v8_enable_webassembly=false
-        \\v8_enable_i18n_support=false
-    
-        \\cppgc_enable_young_generation=false
-        \\cppgc_enable_caged_heap=false
-        \\v8_enable_shared_ro_heap=false
-        \\v8_enable_pointer_compression=false
-        \\v8_enable_verify_heap=false
-        \\v8_enable_sandbox=false
-
-        \\clang_use_chrome_plugins=false
-    ;
-    try gnargs.append(basegn);
-
-    switch (options.target.getOsTag()) {
-        .linux => {
-            const linux =
-                \\treat_warnings_as_errors=false
-                \\fatal_linker_warnings=false
-                \\is_clang=false
-                \\cc_wrapper="ccache"
-                \\target_os="linux"
-                \\host_os="linux"
-                \\use_lld=false
-                \\use_gold=false
-                \\use_sysroot=false
-                \\use_custom_libcxx=false
-                \\custom_toolchain="//:main_zig_toolchain"
-            ;
-            try gnargs.append(linux);
-        },
-        .macos => {
-            const mac =
-                \\treat_warnings_as_errors=false
-                \\fatal_linker_warnings=false
-                \\use_lld=false
-                \\use_gold=false
-                \\target_os="mac"
-                \\host_os="mac"
-                \\use_custom_libcxx=false
-                \\cc_wrapper="ccache"
-                \\use_sysroot=false
-                \\custom_toolchain="//:main_zig_toolchain"
-                \\is_clang=false
-            ;
-            try gnargs.append(mac);
-        },
-        else => unreachable
-    }
-
-    switch (options.target.getCpuArch()) {
-        .arm, .aarch64 => {
-            const arch = try collapse(b,
-                \\target_cpu="arm64"
-                \\host_cpu="arm64"
-            );
-            try gnargs.append(arch);
-        },
-        .x86_64 => {
-            try gnargs.append(try collapse(b,
-                \\target_cpu="x64"
-                \\host_cpu="x64"
-        ));},
-        else => unreachable
-    }
-
-    if (options.optimize == .Debug) {
-        const debug =
-            \\is_debug=true
-            \\symbol_level=1
-            \\v8_optimized_debug=true
-        ;
-        try gnargs.append(debug);
-    }
-    return collapse(b, 
-            try std.mem.join(b.allocator, " ", gnargs.items));
-}
-
-fn rp(b: *Builder, parts: []const []const u8) ![]const u8 {
-    const joined = try join(b.allocator, parts);
-    if (std.fs.path.isAbsolute(joined)) return joined;
-    return std.build.FileSource.relative(joined).getPath(b.getInstallStep().owner);
-}
-
-fn lp(b: *Builder, parts: []const []const u8) !std.Build.LazyPath {
-    const joined = try join(b.allocator, parts);
-    return std.build.FileSource.relative(joined);
-}
-
-fn collapse(b: *Builder, s: []const u8) ![]const u8 {
-    const out = try b.allocator.alloc(u8, s.len);
-    _ = std.mem.replace(u8, s, "\n", " ", out);
-    return out;
 }
 
 inline fn safeUnwrap(v: ?bool) bool {
@@ -343,26 +144,4 @@ inline fn safeUnwrap(v: ?bool) bool {
         if (vu) return true;
     }
     return false;
-}
-
-fn copy101(b: *Builder) !void {
-    std.fs.makeDirAbsolute(try rp(b, &.{"deps", "v8", "101"})) 
-    catch |err| switch (err) {
-        error.PathAlreadyExists => {},
-        else => return err
-    };
-
-    const paths = [_][]const u8{
-        "101.h",
-        "101.cpp"
-    };
-    const src = try rp(b, &.{"src", "101"});
-    const dst = try rp(b, &.{"deps", "v8", "101"});
-
-    for (paths) |p| {
-        try std.fs.copyFileAbsolute(
-            try rp(b, &.{src, p}), 
-            try rp(b, &.{dst, p}), .{}
-        );
-    }
 }

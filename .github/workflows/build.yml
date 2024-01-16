@@ -37,31 +37,16 @@ jobs:
     - name: install system dependencies
       run: |
         bash tools/mac.install.brew.deps.sh
-        pip install Jinja2==3.1.2
-    - name: install gn
+    - name: build deps
       run: |
-        tar xf deps/gn/gn-mac-amd64.zip -C tools/
-        export PATH=$PATH:$PWD/tools
-    - name: setup modules
-      run: |
-        cp tools/mac.Setup.local deps/cpython/Modules/Setup.local
-    - name: fetch v8 dependencies
-      run: cd deps && bash ../tools/fetch.v8.deps.sh
-    - name: build py
-      run: zig build -Doptimize=ReleaseFast -Dpy=true -DCC="ccache cc"
-    - name: build js
-      run: |
-        sed -i'orig' 's/"-Wl,-ObjC"//' deps/v8/build/config/mac/BUILD.gn
-        sed -i'orig' 's/-Wno-maybe-uninitialized/-Wno-uninitialized/' deps/v8/build/config/compiler/BUILD.gn
-        sed -i'orig' 's/-Wno-packed-not-aligned/-Wno-packed-non-pod/' deps/v8/build/config/compiler/BUILD.gn
-        sed -i'orig' 's/-Wno-class-memaccess/-Wno-class-varargs/' deps/v8/build/config/compiler/BUILD.gn
         zig build -Doptimize=ReleaseFast -Djs=true
+        zig build -Doptimize=ReleaseFast -Dggml=true
     - name: build mrt
-      run: zig build -Doptimize=ReleaseSmall -Dmrt=true
+      run: zig build -Doptimize=ReleaseSmall
     - name: run tests
       run: zig build test -Doptimize=ReleaseSmall
     - name: run integration tests
-      run: zig build int-test -Dmrt=true -Doptimize=ReleaseSmall
+      run: zig build int-test -Doptimize=ReleaseSmall
     - name: tarball
       run: bash tools/build.tgz.sh
 
@@ -85,31 +70,16 @@ jobs:
     - name: ccache
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-    - name: install system dependencies
+    - name: build deps
       run: |
-        bash tools/linux.install.deps.sh
-    - name: setup modules
-      run: |
-        cp tools/linux.Setup.local deps/cpython/Modules/Setup.local
-    - name: fetch v8 dependencies
-      run: cd deps && bash ../tools/fetch.v8.deps.sh
-    - name: build py
-      run: zig build -Doptimize=ReleaseFast -Dpy=true -DCC="ccache gcc" 
-    - name: build js
-      run: |
-        sudo apt install -y pkg-config libglib2.0-dev
-        sed -i "s/\"-Wl,--disable-new-dtags\",//" deps/v8/build/config/gcc/BUILD.gn
-        sed -i "s/\"atomic\"//" deps/v8/build/config/linux/BUILD.gn
-        sed -i 's/-Wno-maybe-uninitialized/-Wno-uninitialized/' deps/v8/build/config/compiler/BUILD.gn
-        sed -i 's/-Wno-packed-not-aligned/-Wno-packed-non-pod/' deps/v8/build/config/compiler/BUILD.gn
-        sed -i 's/-Wno-class-memaccess/-Wno-class-varargs/' deps/v8/build/config/compiler/BUILD.gn
         zig build -Doptimize=ReleaseFast -Djs=true
+        zig build -Doptimize=ReleaseFast -Dggml=true
     - name: build mrt
-      run: zig build -Doptimize=ReleaseSmall -Dmrt=true
+      run: zig build -Doptimize=ReleaseSmall
     - name: run tests
       run: zig build test -Doptimize=ReleaseSmall
     - name: run integration tests
-      run: zig build int-test -Dmrt=true -Doptimize=ReleaseSmall
+      run: zig build int-test -Doptimize=ReleaseSmall
     - name: tarball
       run: |
         bash tools/build.tgz.sh

@@ -8,3 +8,4 @@ build/
 tools/gn
 .ccls
 .ccls-cache
+**/node_modules/**
